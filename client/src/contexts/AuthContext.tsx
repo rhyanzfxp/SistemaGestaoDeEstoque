@@ -5,7 +5,7 @@ interface User {
   id: string
   email: string
   nome: string
-  perfil: 'ADMIN' | 'ESTOQUISTA' | 'FUNCIONARIO' | 'GESTAO'
+  perfil: 'ADMIN' | 'GESTAO'
 }
 
 interface AuthContextType {

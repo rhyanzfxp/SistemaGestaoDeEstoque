@@ -4,7 +4,7 @@ import Sidebar from './Sidebar'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  allowedRoles?: Array<'ADMIN' | 'ESTOQUISTA' | 'FUNCIONARIO' | 'GESTAO'>
+  allowedRoles?: Array<'ADMIN' | 'GESTAO'>
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {

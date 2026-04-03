@@ -11,8 +11,8 @@ export default function Sidebar() {
 
   const profileColor =
     user?.perfil === 'ADMIN'
-      ? { bg: 'rgba(139,92,246,0.15)', text: '#a78bfa', label: 'Administrador' }
-      : { bg: 'rgba(6,182,212,0.15)', text: '#67e8f9', label: 'Usuário' }
+      ? { bg: 'rgba(59,130,246,0.15)', text: '#1e40af', label: 'Administrador' }
+      : { bg: 'rgba(16,185,129,0.15)', text: '#059669', label: 'Gestão' }
 
   return (
     <>
@@ -25,21 +25,21 @@ export default function Sidebar() {
           height: 100vh;
           display: flex;
           flex-direction: column;
-          background: #07091f;
-          border-right: 1px solid rgba(255,255,255,0.06);
+          background: #ffffff;
+          border-right: 1px solid rgba(59,130,246,0.15);
           position: relative;
           overflow: hidden;
           font-family: 'DM Sans', sans-serif;
+          box-shadow: 2px 0 12px rgba(0,0,0,0.04);
         }
 
-        /* subtle background glow */
         .sb-root::before {
           content: '';
           position: absolute;
           top: -80px; left: -80px;
           width: 300px; height: 300px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%);
           pointer-events: none;
         }
         .sb-root::after {
@@ -48,14 +48,13 @@ export default function Sidebar() {
           bottom: -60px; right: -60px;
           width: 240px; height: 240px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(168,85,247,0.10) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 70%);
           pointer-events: none;
         }
 
-        /* ── Header ── */
         .sb-header {
           padding: 24px 20px 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
+          border-bottom: 1px solid rgba(59,130,246,0.12);
           position: relative;
           z-index: 1;
         }
@@ -70,9 +69,9 @@ export default function Sidebar() {
         .sb-brand__icon {
           width: 42px; height: 42px;
           border-radius: 13px;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a21caf 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 55%, #1e40af 100%);
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+          box-shadow: 0 4px 16px rgba(37,99,235,0.35);
           flex-shrink: 0;
         }
 
@@ -80,20 +79,19 @@ export default function Sidebar() {
           font-family: 'Sora', sans-serif;
           font-size: 14.5px;
           font-weight: 700;
-          color: #f1f5f9;
+          color: #0f172a;
           line-height: 1.2;
           letter-spacing: -0.01em;
         }
 
         .sb-school {
           font-size: 11.5px;
-          color: rgba(255,255,255,0.35);
+          color: #64748b;
           font-weight: 500;
           padding-left: 2px;
           letter-spacing: 0.02em;
         }
 
-        /* ── Nav ── */
         .sb-nav {
           flex: 1;
           padding: 16px 12px;
@@ -108,7 +106,7 @@ export default function Sidebar() {
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.25);
+          color: #94a3b8;
           text-transform: uppercase;
           padding: 8px 8px 6px;
           margin-bottom: 2px;
@@ -122,7 +120,7 @@ export default function Sidebar() {
           border-radius: 12px;
           font-size: 14px;
           font-weight: 500;
-          color: rgba(255,255,255,0.5);
+          color: #64748b;
           text-decoration: none;
           transition: color 0.18s, background 0.18s;
           position: relative;
@@ -130,13 +128,13 @@ export default function Sidebar() {
         }
 
         .sb-link:hover {
-          color: rgba(255,255,255,0.85);
-          background: rgba(255,255,255,0.06);
+          color: #0f172a;
+          background: rgba(59,130,246,0.08);
         }
 
         .sb-link--active {
-          color: #fff !important;
-          background: rgba(124,58,237,0.18) !important;
+          color: #1e40af !important;
+          background: rgba(59,130,246,0.12) !important;
         }
 
         .sb-link--active::before {
@@ -145,7 +143,7 @@ export default function Sidebar() {
           left: 0; top: 20%; bottom: 20%;
           width: 3px;
           border-radius: 0 4px 4px 0;
-          background: linear-gradient(180deg, #818cf8, #a78bfa);
+          background: linear-gradient(180deg, #3b82f6, #2563eb);
         }
 
         .sb-link__icon {
@@ -164,7 +162,7 @@ export default function Sidebar() {
           opacity: 0;
           transform: translateX(-4px);
           transition: opacity 0.18s, transform 0.18s;
-          color: rgba(255,255,255,0.4);
+          color: #94a3b8;
         }
 
         .sb-link:hover .sb-link__chevron,
@@ -173,10 +171,9 @@ export default function Sidebar() {
           transform: translateX(0);
         }
 
-        /* ── Footer ── */
         .sb-footer {
           padding: 12px;
-          border-top: 1px solid rgba(255,255,255,0.06);
+          border-top: 1px solid rgba(59,130,246,0.12);
           position: relative;
           z-index: 1;
         }
@@ -187,15 +184,15 @@ export default function Sidebar() {
           gap: 11px;
           padding: 10px 12px;
           border-radius: 14px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.06);
+          background: rgba(59,130,246,0.06);
+          border: 1px solid rgba(59,130,246,0.12);
           margin-bottom: 6px;
         }
 
         .sb-user__avatar {
           width: 36px; height: 36px;
           border-radius: 10px;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
           display: flex; align-items: center; justify-content: center;
           font-family: 'Sora', sans-serif;
           font-size: 12px;
@@ -213,7 +210,7 @@ export default function Sidebar() {
         .sb-user__name {
           font-size: 13px;
           font-weight: 600;
-          color: #f1f5f9;
+          color: #0f172a;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -222,7 +219,7 @@ export default function Sidebar() {
 
         .sb-user__email {
           font-size: 11px;
-          color: rgba(255,255,255,0.35);
+          color: #64748b;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -263,7 +260,6 @@ export default function Sidebar() {
       `}</style>
 
       <aside className="sb-root">
-        {}
         <div className="sb-header">
           <div className="sb-brand">
             <div className="sb-brand__icon">
@@ -274,7 +270,6 @@ export default function Sidebar() {
           <p className="sb-school">Escola Yolanda Queiroz</p>
         </div>
 
-        {}
         <nav className="sb-nav">
           <p className="sb-nav__label">Menu</p>
 
@@ -296,19 +291,16 @@ export default function Sidebar() {
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 
-          {user?.perfil === 'ADMIN' && (
-            <NavLink
-              to="/usuarios"
-              className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-            >
-              <Users size={18} className="sb-link__icon" strokeWidth={2} />
-              <span>Usuários</span>
-              <ChevronRight size={14} className="sb-link__chevron" />
-            </NavLink>
-          )}
+          <NavLink
+            to="/usuarios"
+            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
+          >
+            <Users size={18} className="sb-link__icon" strokeWidth={2} />
+            <span>Usuários</span>
+            <ChevronRight size={14} className="sb-link__chevron" />
+          </NavLink>
         </nav>
 
-        {}
         <div className="sb-footer">
           <div className="sb-user">
             <div className="sb-user__avatar">{initials}</div>

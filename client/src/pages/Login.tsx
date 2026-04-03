@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Mail, Lock, Package, ArrowRight, ShieldCheck, Clock3, Boxes, Eye, EyeOff } from 'lucide-react'
@@ -29,7 +29,6 @@ export default function Login() {
 
   return (
     <div className="login-root">
-      {/* Background layers */}
       <div className="login-bg-gradient" />
       <div className="login-bg-grid" />
       <div className="login-bg-orb login-bg-orb--1" />
@@ -37,7 +36,6 @@ export default function Login() {
       <div className="login-bg-orb login-bg-orb--3" />
 
       <div className="login-wrapper">
-        {/* Left — hero copy */}
         <section className="login-hero">
           <div className="login-hero__badge">
             <span className="login-hero__badge-dot" />
@@ -45,8 +43,7 @@ export default function Login() {
           </div>
 
           <h1 className="login-hero__title">
-            Controle inteligente
-            <span className="login-hero__title-sub">para o almoxarifado da escola</span>
+            Escola Yolanda Queiroz 
           </h1>
 
           <p className="login-hero__description">
@@ -79,14 +76,11 @@ export default function Login() {
           </div>
         </section>
 
-        {/* Right — login card */}
         <section className="login-card-wrapper">
           <div className="login-card">
-            {/* Card glow border effect */}
             <div className="login-card__glow" />
 
             <div className="login-card__inner">
-              {/* Logo */}
               <div className="login-card__logo">
                 <div className="login-card__logo-icon">
                   <Package size={28} strokeWidth={2.2} color="white" />
@@ -101,7 +95,6 @@ export default function Login() {
               </div>
 
               <form onSubmit={handleSubmit} className="login-form">
-                {/* Email */}
                 <div className="login-field">
                   <label className="login-field__label">E-mail</label>
                   <div className="login-field__input-wrapper">
@@ -118,7 +111,6 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Password */}
                 <div className="login-field">
                   <label className="login-field__label">Senha</label>
                   <div className="login-field__input-wrapper">
@@ -143,7 +135,6 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="login-error" role="alert">
                     <span className="login-error__dot" />
@@ -151,7 +142,6 @@ export default function Login() {
                   </div>
                 )}
 
-                {/* Submit */}
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -180,62 +170,58 @@ export default function Login() {
       </div>
 
       <style>{`
-        /* ─── Google Font ─── */
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
-        /* ─── Root ─── */
         .login-root {
           position: relative;
           min-height: 100svh;
           overflow: hidden;
-          background: #04061a;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
           font-family: 'DM Sans', sans-serif;
         }
 
-        /* ─── Background ─── */
         .login-bg-gradient {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(ellipse 70% 50% at 15% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 45% at 85% 5%, rgba(168,85,247,0.15) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 60% at 50% 95%, rgba(236,72,153,0.10) 0%, transparent 55%);
+            radial-gradient(ellipse 80% 60% at 20% 15%, rgba(59,130,246,0.25) 0%, transparent 65%),
+            radial-gradient(ellipse 70% 55% at 80% 10%, rgba(96,165,250,0.20) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 70% at 50% 90%, rgba(37,99,235,0.15) 0%, transparent 60%);
         }
 
         .login-bg-grid {
           position: absolute;
           inset: 0;
-          opacity: 0.04;
+          opacity: 0.06;
           background-image:
-            linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px);
+            linear-gradient(rgba(59,130,246,0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59,130,246,0.3) 1px, transparent 1px);
           background-size: 48px 48px;
         }
 
         .login-bg-orb {
           position: absolute;
           border-radius: 50%;
-          filter: blur(80px);
+          filter: blur(90px);
           pointer-events: none;
         }
         .login-bg-orb--1 {
-          width: 500px; height: 500px;
-          top: -100px; left: -150px;
-          background: rgba(99,102,241,0.12);
+          width: 550px; height: 550px;
+          top: -120px; left: -180px;
+          background: rgba(59,130,246,0.18);
         }
         .login-bg-orb--2 {
-          width: 400px; height: 400px;
-          top: -80px; right: -100px;
-          background: rgba(168,85,247,0.12);
+          width: 450px; height: 450px;
+          top: -100px; right: -120px;
+          background: rgba(96,165,250,0.16);
         }
         .login-bg-orb--3 {
-          width: 600px; height: 300px;
-          bottom: -100px; left: 50%;
+          width: 650px; height: 350px;
+          bottom: -120px; left: 50%;
           transform: translateX(-50%);
-          background: rgba(236,72,153,0.08);
+          background: rgba(37,99,235,0.12);
         }
 
-        /* ─── Layout wrapper ─── */
         .login-wrapper {
           position: relative;
           z-index: 10;
@@ -263,7 +249,6 @@ export default function Login() {
           }
         }
 
-        /* ─── Hero (left) ─── */
         .login-hero {
           display: none;
           color: #fff;
@@ -355,16 +340,16 @@ export default function Login() {
           margin-bottom: 14px;
         }
         .login-stat__icon--violet {
-          background: rgba(139,92,246,0.2);
-          color: #a78bfa;
+          background: rgba(59,130,246,0.25);
+          color: #60a5fa;
         }
         .login-stat__icon--cyan {
-          background: rgba(6,182,212,0.2);
-          color: #67e8f9;
+          background: rgba(14,165,233,0.25);
+          color: #38bdf8;
         }
         .login-stat__icon--pink {
-          background: rgba(236,72,153,0.2);
-          color: #f9a8d4;
+          background: rgba(59,130,246,0.2);
+          color: #93c5fd;
         }
 
         .login-stat__value {
@@ -381,7 +366,6 @@ export default function Login() {
           line-height: 1.4;
         }
 
-        /* ─── Card wrapper (right) ─── */
         .login-card-wrapper {
           display: flex;
           justify-content: center;
@@ -389,7 +373,6 @@ export default function Login() {
           width: 100%;
         }
 
-        /* ─── Card ─── */
         .login-card {
           position: relative;
           width: 100%;
@@ -398,19 +381,17 @@ export default function Login() {
           overflow: hidden;
         }
 
-        /* Animated glow border */
         .login-card__glow {
           position: absolute;
           inset: -1px;
           border-radius: 29px;
           background: linear-gradient(135deg,
-            rgba(99,102,241,0.6) 0%,
-            rgba(168,85,247,0.5) 30%,
-            rgba(236,72,153,0.4) 60%,
-            rgba(99,102,241,0.3) 100%
+            rgba(59,130,246,0.7) 0%,
+            rgba(37,99,235,0.6) 50%,
+            rgba(59,130,246,0.5) 100%
           );
           z-index: 0;
-          opacity: 0.7;
+          opacity: 0.8;
         }
 
         .login-card__inner {
@@ -427,7 +408,6 @@ export default function Login() {
           }
         }
 
-        /* ─── Card logo ─── */
         .login-card__logo {
           margin-bottom: 24px;
         }
@@ -438,13 +418,12 @@ export default function Login() {
           justify-content: center;
           width: 60px; height: 60px;
           border-radius: 18px;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a21caf 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
           box-shadow:
-            0 8px 24px rgba(124,58,237,0.35),
-            0 2px 8px rgba(79,70,229,0.2);
+            0 8px 24px rgba(37,99,235,0.4),
+            0 2px 8px rgba(29,78,216,0.3);
         }
 
-        /* ─── Card header ─── */
         .login-card__title {
           font-family: 'Sora', sans-serif;
           font-size: 26px;
@@ -461,7 +440,6 @@ export default function Login() {
           margin-bottom: 28px;
         }
 
-        /* ─── Form ─── */
         .login-form {
           display: flex;
           flex-direction: column;
@@ -518,9 +496,9 @@ export default function Login() {
         }
 
         .login-field__input:focus {
-          border-color: #7c3aed;
+          border-color: #3b82f6;
           background: #fff;
-          box-shadow: 0 0 0 4px rgba(124,58,237,0.09);
+          box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
         }
 
         .login-field__toggle {
@@ -541,7 +519,6 @@ export default function Login() {
           color: #475569;
         }
 
-        /* ─── Error ─── */
         .login-error {
           display: flex;
           align-items: center;
@@ -562,13 +539,12 @@ export default function Login() {
           flex-shrink: 0;
         }
 
-        /* ─── Submit button ─── */
         .login-submit {
           width: 100%;
           padding: 15px 20px;
           border-radius: 14px;
           border: none;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a21caf 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
           color: #fff;
           font-family: 'Sora', sans-serif;
           font-size: 15px;
@@ -576,13 +552,13 @@ export default function Login() {
           letter-spacing: 0.01em;
           cursor: pointer;
           transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-          box-shadow: 0 6px 20px rgba(124,58,237,0.35);
+          box-shadow: 0 6px 20px rgba(37,99,235,0.4);
           margin-top: 4px;
         }
 
         .login-submit:hover:not(:disabled) {
           transform: translateY(-1px);
-          box-shadow: 0 10px 28px rgba(124,58,237,0.45);
+          box-shadow: 0 10px 28px rgba(37,99,235,0.5);
           opacity: 0.93;
         }
 
@@ -624,7 +600,6 @@ export default function Login() {
           to { transform: rotate(360deg); }
         }
 
-        /* ─── Footer ─── */
         .login-card__footer {
           margin-top: 24px;
           padding-top: 18px;
@@ -639,7 +614,6 @@ export default function Login() {
           font-weight: 500;
         }
 
-        /* ─── Mobile-only: show compact badge above card ─── */
         @media (max-width: 1023px) {
           .login-wrapper {
             justify-items: center;

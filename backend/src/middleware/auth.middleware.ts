@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 
-
-type Perfil = 'ADMIN' | 'ESTOQUISTA' | 'FUNCIONARIO' | 'GESTAO'
+type Perfil = 'ADMIN' | 'GESTAO'
 
 interface JwtPayload {
   id: string
@@ -16,8 +15,6 @@ declare global {
     }
   }
 }
-
-
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
@@ -37,8 +34,6 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   }
 }
 
-
-
 export const requireRole = (...roles: Perfil[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -54,7 +49,7 @@ export const requireRole = (...roles: Perfil[]) => {
 }
 
 
-export const PERFIS_ESCRITA: Perfil[] = ['ADMIN', 'ESTOQUISTA']
-export const PERFIS_ADMIN: Perfil[] = ['ADMIN']
-export const PERFIS_LEITURA: Perfil[] = ['ADMIN', 'ESTOQUISTA', 'FUNCIONARIO', 'GESTAO']
+export const PERFIS_ESCRITA: Perfil[] = ['ADMIN', 'GESTAO']
+export const PERFIS_ADMIN: Perfil[] = ['ADMIN', 'GESTAO']
+export const PERFIS_LEITURA: Perfil[] = ['ADMIN', 'GESTAO']
 

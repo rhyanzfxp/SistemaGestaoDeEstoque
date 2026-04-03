@@ -6,7 +6,7 @@ interface User {
   nome: string
   email: string
   senha: string
-  perfil: 'ADMIN' | 'ESTOQUISTA' | 'FUNCIONARIO' | 'GESTAO'
+  perfil: 'ADMIN' | 'GESTAO'
   ativo: boolean
 }
 
@@ -34,23 +34,30 @@ export const mockDatabase = {
 }
 
 export async function initializeMockData() {
-  
   if (mockDatabase.usuarios.length > 0) return
 
-  
-  const hashedPassword = await bcrypt.hash('admin123', 10)
+  const hashedPasswordAdmin = await bcrypt.hash('admin123', 10)
+  const hashedPasswordGestao = await bcrypt.hash('gestao123', 10)
 
   const adminUser: User = {
     id: randomUUID(),
     nome: 'Administrador',
     email: 'admin@escolayolanda.com',
-    senha: hashedPassword,
+    senha: hashedPasswordAdmin,
     perfil: 'ADMIN',
     ativo: true
   }
 
-  mockDatabase.usuarios.push(adminUser)
+  const gestaoUser: User = {
+    id: randomUUID(),
+    nome: 'Gestão Escolar',
+    email: 'gestao@escolayolanda.com',
+    senha: hashedPasswordGestao,
+    perfil: 'GESTAO',
+    ativo: true
+  }
 
+  mockDatabase.usuarios.push(adminUser, gestaoUser)
 
   const produtos: Produto[] = [
     {
@@ -85,7 +92,6 @@ export async function initializeMockData() {
 
   mockDatabase.produtos.push(...produtos)
 
-
   const agora = Date.now()
 
   const movimentacoes: Movimentacao[] = [
@@ -103,7 +109,7 @@ export async function initializeMockData() {
       produto_id: produtos[1].id,
       quantidade: 10,
       usuario_id: adminUser.id,
-      created_at: new Date(agora - 3_600_000).toISOString() 
+      created_at: new Date(agora - 3_600_000).toISOString()
     },
     {
       id: randomUUID(),
@@ -111,25 +117,25 @@ export async function initializeMockData() {
       produto_id: produtos[2].id,
       quantidade: 80,
       usuario_id: adminUser.id,
-      created_at: new Date(agora - 7_200_000).toISOString() 
+      created_at: new Date(agora - 7_200_000).toISOString()
     },
     {
       id: randomUUID(),
-      tipo: 'SOLICITACAO',  
+      tipo: 'SOLICITACAO',
       produto_id: produtos[3].id,
       quantidade: 20,
       usuario_id: adminUser.id,
-      created_at: new Date(agora - 10_800_000).toISOString() 
+      created_at: new Date(agora - 10_800_000).toISOString()
     }
   ]
 
   mockDatabase.movimentacoes.push(...movimentacoes)
 
-
   if (process.env.NODE_ENV !== 'production') {
-    console.log(' [Seed] Banco inicializado.')
-    console.log('   → Admin: admin@escolayolanda.com / admin123')
+    console.log('[Seed] Banco inicializado.')
+    console.log('Admin: admin@escolayolanda.com / admin123')
+    console.log('Gestao: gestao@escolayolanda.com / gestao123')
   } else {
-    console.log(' [Seed] Banco inicializado. Credenciais entregues ao responsável.')
+    console.log('[Seed] Banco inicializado. Credenciais entregues ao responsável.')
   }
 }
