@@ -33,10 +33,8 @@ export default function Users() {
     perfil: 'GESTAO'
   })
 
-  // Check if user is ADMIN
   const isAdmin = user?.perfil === 'ADMIN'
 
-  // Fetch users
   const fetchUsers = async () => {
     try {
       const response = await fetch('/api/users', {
@@ -59,7 +57,6 @@ export default function Users() {
     }
   }, [token, isAdmin])
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -101,7 +98,6 @@ export default function Users() {
     }
   }
 
-  // Handle edit
   const handleEdit = (u: User) => {
     setFormData({
       nome: u.nome,
@@ -115,7 +111,6 @@ export default function Users() {
     setSuccess('')
   }
 
-  // Handle delete
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja deletar este usuário?')) return
 
@@ -134,7 +129,6 @@ export default function Users() {
     }
   }
 
-  // Close modal
   const closeModal = () => {
     setShowModal(false)
     setEditingId(null)
@@ -190,7 +184,6 @@ export default function Users() {
           </button>
         </div>
 
-        {/* Success/Error Messages */}
         {success && (
           <div className="users-message users-message--success">
             <Check size={18} />
@@ -204,7 +197,6 @@ export default function Users() {
           </div>
         )}
 
-        {/* Users Table */}
         <div className="users-table-wrapper">
           {users.length > 0 ? (
             <table className="users-table">
@@ -271,7 +263,6 @@ export default function Users() {
           )}
         </div>
 
-        {/* Modal */}
         {showModal && (
           <div className="users-modal-overlay" onClick={closeModal}>
             <div className="users-modal" onClick={(e) => e.stopPropagation()}>
@@ -647,7 +638,6 @@ const usersStyles = `
     color: #94a3b8;
   }
 
-  /* Modal Styles */
   .users-modal-overlay {
     position: fixed;
     top: 0;

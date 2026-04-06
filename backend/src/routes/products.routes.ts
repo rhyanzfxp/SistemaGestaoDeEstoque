@@ -75,28 +75,6 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
   }
 })
 
-router.get('/:id', authMiddleware, (req: Request, res: Response) => {
-  try {
-    const { id } = req.params
-    const produto = mockDatabase.produtos.find(p => p.id === id)
-
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' })
-    }
-
-    const categoria = mockDatabase.categorias.find(c => c.id === produto.categoria_id)
-    const fornecedor = mockDatabase.fornecedores.find(f => f.id === produto.fornecedor_id)
-
-    res.json({
-      ...produto,
-      categoria_nome: categoria?.nome || '',
-      fornecedor_nome: fornecedor?.nome || ''
-    })
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar produto' })
-  }
-})
-
 router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo } = req.body
@@ -105,7 +83,6 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
       return res.status(400).json({ error: 'Todos os campos são obrigatórios' })
     }
 
-    // Verificar se código já existe
     const codigoExists = mockDatabase.produtos.some(p => p.codigo === codigo)
     if (codigoExists) {
       return res.status(400).json({ error: 'Código do produto já existe' })
@@ -142,7 +119,7 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo } = req.body
+    const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo, ativo } = req.body
 
     const produto = mockDatabase.produtos.find(p => p.id === id)
     if (!produto) {
@@ -171,10 +148,30 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
     if (fornecedor_id) produto.fornecedor_id = fornecedor_id
     if (quantidade_atual !== undefined) produto.quantidade_atual = parseInt(quantidade_atual)
     if (estoque_minimo !== undefined) produto.estoque_minimo = parseInt(estoque_minimo)
+    if (ativo !== undefined) produto.ativo = ativo
 
     res.json(produto)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar produto' })
+  }
+})
+
+router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const index = mockDatabase.produtos.findIndex(p => p.id === id)
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Produto não encontrado' })
+    }
+
+    mockDatabase.produtos.splice(index, 1)
+
+    res.json({
+      message: 'Produto excluído com sucesso'
+    })
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir produto' })
   }
 })
 
@@ -195,6 +192,28 @@ router.patch('/:id/inativar', authMiddleware, requireRole('ADMIN', 'GESTAO'), (r
     })
   } catch (error) {
     res.status(500).json({ error: 'Erro ao inativar produto' })
+  }
+})
+
+router.get('/:id', authMiddleware, (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const produto = mockDatabase.produtos.find(p => p.id === id)
+
+    if (!produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' })
+    }
+
+    const categoria = mockDatabase.categorias.find(c => c.id === produto.categoria_id)
+    const fornecedor = mockDatabase.fornecedores.find(f => f.id === produto.fornecedor_id)
+
+    res.json({
+      ...produto,
+      categoria_nome: categoria?.nome || '',
+      fornecedor_nome: fornecedor?.nome || ''
+    })
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar produto' })
   }
 })
 
