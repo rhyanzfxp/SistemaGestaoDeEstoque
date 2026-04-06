@@ -39,6 +39,7 @@ interface FormData {
   fornecedor_id: string
   quantidade_atual: number | string
   estoque_minimo: number | string
+  ativo?: boolean
 }
 
 interface PaginationInfo {
@@ -59,13 +60,11 @@ export default function Products() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  // Filtros e busca
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Form
   const [formData, setFormData] = useState<FormData>({
     codigo: '',
     nome: '',
@@ -73,7 +72,8 @@ export default function Products() {
     marca: '',
     fornecedor_id: '',
     quantidade_atual: '',
-    estoque_minimo: ''
+    estoque_minimo: '',
+    ativo: true
   })
 
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -86,7 +86,6 @@ export default function Products() {
   const isAdmin = user?.perfil === 'ADMIN' || user?.perfil === 'GESTAO'
   const canCreate = isAdmin
 
-  // Fetch dados iniciais
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -101,7 +100,6 @@ export default function Products() {
         setCategorias(categoriasData)
         setFornecedores(fornecedoresData)
 
-        // Define o primeiro como padrão
         if (categoriasData.length > 0) {
           setFormData(prev => ({ ...prev, categoria_id: categoriasData[0].id }))
         }
@@ -116,7 +114,6 @@ export default function Products() {
     fetchInitialData()
   }, [token])
 
-  // Fetch produtos com filtros
   const fetchProducts = async (page = 1) => {
     try {
       const params = new URLSearchParams()
@@ -152,7 +149,6 @@ export default function Products() {
     return () => clearTimeout(timer)
   }, [search, selectedCategory, selectedStatus, token])
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -176,7 +172,8 @@ export default function Products() {
         body: JSON.stringify({
           ...formData,
           quantidade_atual: parseInt(formData.quantidade_atual.toString()),
-          estoque_minimo: parseInt(formData.estoque_minimo.toString())
+          estoque_minimo: parseInt(formData.estoque_minimo.toString()),
+          ativo: formData.ativo ?? true
         })
       })
 
@@ -194,7 +191,6 @@ export default function Products() {
     }
   }
 
-  // Handle edit
   const handleEdit = (p: Produto) => {
     setFormData({
       codigo: p.codigo,
@@ -203,7 +199,8 @@ export default function Products() {
       marca: p.marca,
       fornecedor_id: p.fornecedor_id,
       quantidade_atual: p.quantidade_atual,
-      estoque_minimo: p.estoque_minimo
+      estoque_minimo: p.estoque_minimo,
+      ativo: p.ativo
     })
     setEditingId(p.id)
     setShowModal(true)
@@ -211,26 +208,24 @@ export default function Products() {
     setSuccess('')
   }
 
-  // Handle inativar
-  const handleInativar = async (id: string) => {
-    if (!confirm('Tem certeza que deseja inativar este produto?')) return
+  const handleExcluir = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.')) return
 
     try {
-      const response = await fetch(`/api/produtos/${id}/inativar`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/produtos/${id}`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      if (!response.ok) throw new Error('Erro ao inativar')
+      if (!response.ok) throw new Error('Erro ao excluir')
 
-      setSuccess('Produto inativado com sucesso!')
+      setSuccess('Produto excluído com sucesso!')
       fetchProducts(currentPage)
     } catch (err: any) {
-      setError(err.message || 'Erro ao inativar produto')
+      setError(err.message || 'Erro ao excluir produto')
     }
   }
 
-  // Reset form
   const resetForm = () => {
     setFormData({
       codigo: '',
@@ -239,12 +234,12 @@ export default function Products() {
       marca: '',
       fornecedor_id: fornecedores[0]?.id || '',
       quantidade_atual: '',
-      estoque_minimo: ''
+      estoque_minimo: '',
+      ativo: true
     })
     setEditingId(null)
   }
 
-  // Close modal
   const closeModal = () => {
     setShowModal(false)
     resetForm()
@@ -287,7 +282,6 @@ export default function Products() {
           )}
         </div>
 
-        {/* Messages */}
         {success && (
           <div className="products-message products-message--success">
             <Check size={18} />
@@ -301,7 +295,6 @@ export default function Products() {
           </div>
         )}
 
-        {/* Filters */}
         <div className="products-filters">
           <div className="products-search">
             <Search size={18} />
@@ -336,7 +329,6 @@ export default function Products() {
           </select>
         </div>
 
-        {/* Table */}
         <div className="products-table-wrapper">
           {produtos.length > 0 ? (
             <table className="products-table">
@@ -391,11 +383,11 @@ export default function Products() {
                       >
                         <Edit2 size={16} />
                       </button>
-                      {canCreate && p.ativo && (
+                      {canCreate && (
                         <button
-                          onClick={() => handleInativar(p.id)}
+                          onClick={() => handleExcluir(p.id)}
                           className="products-action-btn products-action-btn--delete"
-                          title="Inativar"
+                          title="Excluir"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -423,7 +415,6 @@ export default function Products() {
           )}
         </div>
 
-        {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="products-pagination">
             <button
@@ -446,7 +437,6 @@ export default function Products() {
           </div>
         )}
 
-        {/* Modal */}
         {showModal && canCreate && (
           <div className="products-modal-overlay" onClick={closeModal}>
             <div className="products-modal" onClick={(e) => e.stopPropagation()}>
@@ -542,6 +532,18 @@ export default function Products() {
                       placeholder="0"
                       className="products-input"
                     />
+                  </div>
+
+                  <div className="products-form__group">
+                    <label>Status *</label>
+                    <select
+                      value={formData.ativo ? 'ativo' : 'inativo'}
+                      onChange={(e) => setFormData({ ...formData, ativo: e.target.value === 'ativo' })}
+                      className="products-input"
+                    >
+                      <option value="ativo">Ativo</option>
+                      <option value="inativo">Inativo</option>
+                    </select>
                   </div>
                 </div>
 
@@ -944,7 +946,6 @@ const productsStyles = `
     color: #64748b;
   }
 
-  /* Modal */
   .products-modal-overlay {
     position: fixed;
     top: 0;
