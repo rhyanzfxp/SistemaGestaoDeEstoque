@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
+import Products from './pages/Products'
 import Users from './pages/Users'
 import Login from './pages/Login'
 
@@ -16,6 +17,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/produtos"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                <Products />
               </ProtectedRoute>
             }
           />

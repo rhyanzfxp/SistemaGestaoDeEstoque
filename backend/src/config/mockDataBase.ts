@@ -11,12 +11,30 @@ interface User {
   created_at?: string
 }
 
-interface Produto {
+interface Categoria {
   id: string
   nome: string
+  descricao?: string
+}
+
+interface Fornecedor {
+  id: string
+  nome: string
+  email?: string
+  telefone?: string
+}
+
+interface Produto {
+  id: string
+  codigo: string
+  nome: string
+  categoria_id: string
+  marca: string
+  fornecedor_id: string
   quantidade_atual: number
   estoque_minimo: number
   ativo: boolean
+  created_at?: string
 }
 
 interface Movimentacao {
@@ -29,6 +47,8 @@ interface Movimentacao {
 }
 
 export const mockDatabase = {
+  categorias: [] as Categoria[],
+  fornecedores: [] as Fornecedor[],
   usuarios: [] as User[],
   produtos: [] as Produto[],
   movimentacoes: [] as Movimentacao[]
@@ -60,34 +80,74 @@ export async function initializeMockData() {
 
   mockDatabase.usuarios.push(adminUser, gestaoUser)
 
+  // Inicializar Categorias
+  const categorias: Categoria[] = [
+    { id: randomUUID(), nome: 'Alimentos Secos', descricao: 'Arroz, feijão, macarrão' },
+    { id: randomUUID(), nome: 'Óleos e Gorduras', descricao: 'Óleos, manteigas' },
+    { id: randomUUID(), nome: 'Temperos', descricao: 'Sal, açúcar, condimentos' },
+    { id: randomUUID(), nome: 'Bebidas', descricao: 'Leite, suco, água' }
+  ]
+
+  mockDatabase.categorias.push(...categorias)
+
+  // Inicializar Fornecedores
+  const fornecedores: Fornecedor[] = [
+    { id: randomUUID(), nome: 'Distribuidora A', email: 'contato@distA.com', telefone: '(11) 98765-4321' },
+    { id: randomUUID(), nome: 'Fornecedor B', email: 'vendas@fornecB.com', telefone: '(11) 97654-3210' },
+    { id: randomUUID(), nome: 'Supplies C', email: 'compras@suppliesC.com', telefone: '(11) 96543-2109' }
+  ]
+
+  mockDatabase.fornecedores.push(...fornecedores)
+
+  // Inicializar Produtos com novos campos
   const produtos: Produto[] = [
     {
       id: randomUUID(),
+      codigo: 'ARR001',
       nome: 'Arroz Branco 5kg',
+      categoria_id: categorias[0].id,
+      marca: 'Marca Premium',
+      fornecedor_id: fornecedores[0].id,
       quantidade_atual: 50,
       estoque_minimo: 20,
-      ativo: true
+      ativo: true,
+      created_at: new Date().toISOString()
     },
     {
       id: randomUUID(),
+      codigo: 'FEI002',
       nome: 'Feijão Preto 1kg',
+      categoria_id: categorias[0].id,
+      marca: 'Qualidade Total',
+      fornecedor_id: fornecedores[0].id,
       quantidade_atual: 15, 
       estoque_minimo: 30,
-      ativo: true
+      ativo: true,
+      created_at: new Date().toISOString()
     },
     {
       id: randomUUID(),
+      codigo: 'OLE003',
       nome: 'Óleo de Soja 900ml',
+      categoria_id: categorias[1].id,
+      marca: 'Oléo Fino',
+      fornecedor_id: fornecedores[1].id,
       quantidade_atual: 80,
       estoque_minimo: 25,
-      ativo: true
+      ativo: true,
+      created_at: new Date().toISOString()
     },
     {
       id: randomUUID(),
+      codigo: 'MAC004',
       nome: 'Macarrão Espaguete 500g',
+      categoria_id: categorias[0].id,
+      marca: 'Pasta Délicia',
+      fornecedor_id: fornecedores[1].id,
       quantidade_atual: 100,
       estoque_minimo: 40,
-      ativo: true
+      ativo: true,
+      created_at: new Date().toISOString()
     }
   ]
 

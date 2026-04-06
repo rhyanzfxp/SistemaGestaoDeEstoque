@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import usersRoutes from './routes/users.routes'
+import productsRoutes from './routes/products.routes'
 import { initializeMockData } from './config/mockDataBase'
 
 dotenv.config()
@@ -17,6 +18,7 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/users', usersRoutes)
+app.use('/api/produtos', productsRoutes)
 
 initializeMockData()
 
