@@ -8,6 +8,7 @@ interface User {
   senha: string
   perfil: 'ADMIN' | 'GESTAO'
   ativo: boolean
+  created_at?: string
 }
 
 interface Produto {
