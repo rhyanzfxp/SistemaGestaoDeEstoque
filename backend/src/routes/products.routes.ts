@@ -217,4 +217,52 @@ router.get('/:id', authMiddleware, (req: Request, res: Response) => {
   }
 })
 
+router.post('/:id/movimentar', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { tipo, quantidade } = req.body; 
+
+    const produto = mockDatabase.produtos.find(p => p.id === id);
+    if (!produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+
+    const qtd = parseInt(quantidade);
+    if (isNaN(qtd) || qtd <= 0) {
+      return res.status(400).json({ error: 'Quantidade inválida' });
+    }
+
+    if (tipo === 'SAIDA' && produto.quantidade_atual < qtd) {
+      return res.status(400).json({ error: 'Saldo insuficiente para esta saída' });
+    }
+
+    if (tipo === 'ENTRADA') {
+      produto.quantidade_atual += qtd;
+    } else if (tipo === 'SAIDA') {
+      produto.quantidade_atual -= qtd;
+    } else {
+      return res.status(400).json({ error: 'Tipo de movimentação inválido' });
+    }
+
+    const novaMovimentacao: any = {
+      id: randomUUID(),
+      tipo: tipo as 'ENTRADA' | 'SAIDA',
+      produto_id: id,
+      quantidade: qtd,
+      usuario_id: req.user?.id || 'sistema',
+      created_at: new Date().toISOString()
+    };
+
+    mockDatabase.movimentacoes.push(novaMovimentacao);
+
+    res.json({
+      message: 'Movimentação realizada com sucesso',
+      novo_saldo: produto.quantidade_atual,
+      movimentacao: novaMovimentacao
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao registrar movimentação' });
+  }
+});
+
 export default router
