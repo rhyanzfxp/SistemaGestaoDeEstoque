@@ -44,6 +44,7 @@ interface Movimentacao {
   id: string
   tipo: 'ENTRADA' | 'SAIDA' | 'SOLICITACAO'
   produto_id: string
+  produto_nome: string
   quantidade: number
   usuario_id: string
   created_at: string
@@ -102,98 +103,7 @@ export async function initializeMockData() {
 
   mockDatabase.fornecedores.push(...fornecedores)
 
-  // Inicializar Produtos com novos campos
-  const produtos: Produto[] = [
-    {
-      id: randomUUID(),
-      codigo: 'ARR001',
-      nome: 'Arroz Branco 5kg',
-      categoria_id: categorias[0].id,
-      marca: 'Marca Premium',
-      fornecedor_id: fornecedores[0].id,
-      quantidade_atual: 50,
-      estoque_minimo: 20,
-      ativo: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: randomUUID(),
-      codigo: 'FEI002',
-      nome: 'Feijão Preto 1kg',
-      categoria_id: categorias[0].id,
-      marca: 'Qualidade Total',
-      fornecedor_id: fornecedores[0].id,
-      quantidade_atual: 15, 
-      estoque_minimo: 30,
-      ativo: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: randomUUID(),
-      codigo: 'OLE003',
-      nome: 'Óleo de Soja 900ml',
-      categoria_id: categorias[1].id,
-      marca: 'Oléo Fino',
-      fornecedor_id: fornecedores[1].id,
-      quantidade_atual: 80,
-      estoque_minimo: 25,
-      ativo: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: randomUUID(),
-      codigo: 'MAC004',
-      nome: 'Macarrão Espaguete 500g',
-      categoria_id: categorias[0].id,
-      marca: 'Pasta Délicia',
-      fornecedor_id: fornecedores[1].id,
-      quantidade_atual: 100,
-      estoque_minimo: 40,
-      ativo: true,
-      created_at: new Date().toISOString()
-    }
-  ]
-
-  mockDatabase.produtos.push(...produtos)
-
-  const agora = Date.now()
-
-  const movimentacoes: Movimentacao[] = [
-    {
-      id: randomUUID(),
-      tipo: 'ENTRADA',
-      produto_id: produtos[0].id,
-      quantidade: 50,
-      usuario_id: adminUser.id,
-      created_at: new Date(agora).toISOString()
-    },
-    {
-      id: randomUUID(),
-      tipo: 'SAIDA',
-      produto_id: produtos[1].id,
-      quantidade: 10,
-      usuario_id: adminUser.id,
-      created_at: new Date(agora - 3_600_000).toISOString()
-    },
-    {
-      id: randomUUID(),
-      tipo: 'ENTRADA',
-      produto_id: produtos[2].id,
-      quantidade: 80,
-      usuario_id: adminUser.id,
-      created_at: new Date(agora - 7_200_000).toISOString()
-    },
-    {
-      id: randomUUID(),
-      tipo: 'SOLICITACAO',
-      produto_id: produtos[3].id,
-      quantidade: 20,
-      usuario_id: adminUser.id,
-      created_at: new Date(agora - 10_800_000).toISOString()
-    }
-  ]
-
-  mockDatabase.movimentacoes.push(...movimentacoes)
+  // Produtos e movimentações serão criados pelo usuário
 
   if (process.env.NODE_ENV !== 'production') {
     console.log('[Seed] Banco inicializado.')
