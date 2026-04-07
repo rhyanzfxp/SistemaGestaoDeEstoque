@@ -291,6 +291,15 @@ export default function Sidebar() {
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 
+          <NavLink
+          to="/categorias"
+          className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
+          >
+            <LayoutDashboard size={18} className="sb-link__icon" strokeWidth={2} />
+            <span>Categorias</span>
+            <ChevronRight size={14} className="sb-link__chevron" />
+            </NavLink>
+
           {user?.perfil === 'ADMIN' && (
             <NavLink
               to="/usuarios"

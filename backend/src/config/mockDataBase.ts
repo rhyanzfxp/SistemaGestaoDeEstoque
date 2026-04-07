@@ -11,10 +11,13 @@ interface User {
   created_at?: string
 }
 
-interface Categoria {
-  id: string
-  nome: string
-  descricao?: string
+export interface Categoria {
+  id: string;
+  nome: string;
+  tipo: 'alimentício' | 'escolar' | 'escritório' | 'uso coletivo';
+  perecivel: boolean;
+  prazo_alerta: number;
+  descricao?: string;
 }
 
 interface Fornecedor {
@@ -82,11 +85,11 @@ export async function initializeMockData() {
 
   // Inicializar Categorias
   const categorias: Categoria[] = [
-    { id: randomUUID(), nome: 'Alimentos Secos', descricao: 'Arroz, feijão, macarrão' },
-    { id: randomUUID(), nome: 'Óleos e Gorduras', descricao: 'Óleos, manteigas' },
-    { id: randomUUID(), nome: 'Temperos', descricao: 'Sal, açúcar, condimentos' },
-    { id: randomUUID(), nome: 'Bebidas', descricao: 'Leite, suco, água' }
-  ]
+  { id: randomUUID(), nome: 'Alimentos Secos', tipo: 'alimentício', perecivel: true, prazo_alerta: 3, descricao: 'Arroz, feijão' },
+  { id: randomUUID(), nome: 'Óleos e Gorduras', tipo: 'alimentício', perecivel: true, prazo_alerta: 3, descricao: 'Óleos' },
+  { id: randomUUID(), nome: 'Temperos', tipo: 'alimentício', perecivel: false, prazo_alerta: 30, descricao: 'Sal, açúcar' },
+  { id: randomUUID(), nome: 'Bebidas', tipo: 'alimentício', perecivel: true, prazo_alerta: 3, descricao: 'Leite, suco' }
+];
 
   mockDatabase.categorias.push(...categorias)
 

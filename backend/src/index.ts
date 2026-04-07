@@ -5,7 +5,9 @@ import authRoutes from './routes/auth.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import usersRoutes from './routes/users.routes'
 import productsRoutes from './routes/products.routes'
+import categoriesRoutes from './routes/categories.routes'
 import { initializeMockData } from './config/mockDataBase'
+
 
 dotenv.config()
 
@@ -19,6 +21,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/produtos', productsRoutes)
+app.use('/api/categories', categoriesRoutes)
 
 initializeMockData()
 
