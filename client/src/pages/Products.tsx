@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Package, Plus, Edit2, Eye, AlertTriangle, X, Check, Trash2, RefreshCw, Search, Filter } from 'lucide-react'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface Produto {
   id: string
@@ -62,6 +63,9 @@ export default function Products() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showConfirmInactivate, setShowConfirmInactivate] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<string | null>(null)
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -246,21 +250,57 @@ export default function Products() {
     setSuccess('')
   }
 
-  const handleExcluir = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.')) return
+  const handleExcluir = async () => {
+    if (!productToDelete) return
 
     try {
-      const response = await fetch(`/api/produtos/${id}`, {
+      const response = await fetch(`/api/produtos/${productToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      if (!response.ok) throw new Error('Erro ao excluir')
+      const data = await response.json()
+
+      if (response.status === 422) {
+        // Produto tem movimentações, mostrar opção de inativar
+        setError(data.error)
+        setShowConfirmDelete(false)
+        
+        // Mostrar modal de inativação (mantém productToDelete)
+        setTimeout(() => {
+          setShowConfirmInactivate(true)
+        }, 100)
+        return
+      }
+
+      if (!response.ok) throw new Error(data.error || 'Erro ao excluir')
 
       setSuccess('Produto excluído com sucesso!')
       fetchProducts(currentPage)
+      setProductToDelete(null)
     } catch (err: any) {
       setError(err.message || 'Erro ao excluir produto')
+      setProductToDelete(null)
+    }
+  }
+
+  const handleInativar = async () => {
+    if (!productToDelete) return
+
+    try {
+      const response = await fetch(`/api/produtos/${productToDelete}/inativar`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (!response.ok) throw new Error('Erro ao inativar')
+
+      setSuccess('Produto inativado com sucesso!')
+      fetchProducts(currentPage)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao inativar produto')
+    } finally {
+      setProductToDelete(null)
     }
   }
 
@@ -434,7 +474,10 @@ export default function Products() {
                       </button>
                       {canCreate && (
                         <button
-                          onClick={() => handleExcluir(p.id)}
+                          onClick={() => {
+                            setProductToDelete(p.id)
+                            setShowConfirmDelete(true)
+                          }}
                           className="products-action-btn products-action-btn--delete"
                           title="Excluir"
                         >
@@ -656,6 +699,34 @@ export default function Products() {
     </div>
   </div>
 )}
+
+        <ConfirmModal
+          isOpen={showConfirmDelete}
+          title="Excluir Produto"
+          message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+          confirmText="Sim, excluir"
+          cancelText="Cancelar"
+          onConfirm={handleExcluir}
+          onCancel={() => {
+            setShowConfirmDelete(false)
+            setProductToDelete(null)
+          }}
+          variant="danger"
+        />
+
+        <ConfirmModal
+          isOpen={showConfirmInactivate}
+          title="Inativar Produto"
+          message="Este produto possui movimentações e não pode ser excluído. Deseja inativá-lo? O produto será mantido no histórico mas não aparecerá nas listagens."
+          confirmText="Sim, inativar"
+          cancelText="Cancelar"
+          onConfirm={handleInativar}
+          onCancel={() => {
+            setShowConfirmInactivate(false)
+            setProductToDelete(null)
+          }}
+          variant="warning"
+        />
       </div>
     </>
   )

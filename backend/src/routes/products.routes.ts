@@ -27,13 +27,16 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
 
     let produtos = mockDatabase.produtos
 
+    // Filtrar por status
+    if (status === 'ativo') {
+      produtos = produtos.filter(p => p.ativo === true)
+    } else if (status === 'inativo') {
+      produtos = produtos.filter(p => p.ativo === false)
+    }
+    // Se status for vazio ou não especificado, mostra todos (ativos e inativos)
+
     if (categoria_id) {
       produtos = produtos.filter(p => p.categoria_id === categoria_id)
-    }
-
-    if (status) {
-      const isActive = status === 'ativo'
-      produtos = produtos.filter(p => p.ativo === isActive)
     }
 
     if (search) {
@@ -159,12 +162,24 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
 router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const index = mockDatabase.produtos.findIndex(p => p.id === id)
+    const produto = mockDatabase.produtos.find(p => p.id === id)
 
-    if (index === -1) {
+    if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
 
+    // Verificar se existem movimentações associadas ao produto
+    const temMovimentacoes = mockDatabase.movimentacoes.some(m => m.produto_id === id)
+
+    if (temMovimentacoes) {
+      return res.status(422).json({ 
+        error: 'Este produto possui movimentações registradas e não pode ser excluído. Utilize a opção de inativar o produto.',
+        canInactivate: true
+      })
+    }
+
+    // Se não há movimentações, permitir exclusão física
+    const index = mockDatabase.produtos.findIndex(p => p.id === id)
     mockDatabase.produtos.splice(index, 1)
 
     res.json({
@@ -248,6 +263,7 @@ router.post('/:id/movimentar', authMiddleware, requireRole('ADMIN', 'GESTAO'), a
       id: randomUUID(),
       tipo: tipo as 'ENTRADA' | 'SAIDA',
       produto_id: id,
+      produto_nome: produto.nome,
       quantidade: qtd,
       usuario_id: req.user?.id || 'sistema',
       created_at: new Date().toISOString()

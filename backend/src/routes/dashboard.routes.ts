@@ -18,13 +18,12 @@ router.get('/', authMiddleware, async (req, res) => {
       .slice(0, 10)
 
     const ultimasMovimentacoes = movimentacoes.map(m => {
-      const produto = mockDatabase.produtos.find(p => p.id === m.produto_id)
       const usuario = mockDatabase.usuarios.find(u => u.id === m.usuario_id)
       
       return {
         id: m.id,
         tipo: m.tipo,
-        produto: produto?.nome || '',
+        produto: m.produto_nome,
         quantidade: m.quantidade,
         usuario: usuario?.nome || '',
         data: m.created_at

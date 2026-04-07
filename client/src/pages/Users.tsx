@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Users as UsersIcon, Plus, Edit2, Trash2, X, Check, AlertCircle, RefreshCw } from 'lucide-react'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface User {
   id: string
@@ -26,6 +27,8 @@ export default function Users() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -111,11 +114,11 @@ export default function Users() {
     setSuccess('')
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja deletar este usuário?')) return
+  const handleDelete = async () => {
+    if (!userToDelete) return
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
+      const response = await fetch(`/api/users/${userToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -126,6 +129,8 @@ export default function Users() {
       fetchUsers()
     } catch (err: any) {
       setError(err.message || 'Erro ao deletar usuário')
+    } finally {
+      setUserToDelete(null)
     }
   }
 
@@ -243,7 +248,10 @@ export default function Users() {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(u.id)}
+                        onClick={() => {
+                          setUserToDelete(u.id)
+                          setShowConfirmDelete(true)
+                        }}
                         className="users-action-btn users-action-btn--delete"
                         title="Deletar"
                       >
@@ -340,6 +348,20 @@ export default function Users() {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={showConfirmDelete}
+          title="Deletar Usuário"
+          message="Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita."
+          confirmText="Sim, deletar"
+          cancelText="Cancelar"
+          onConfirm={handleDelete}
+          onCancel={() => {
+            setShowConfirmDelete(false)
+            setUserToDelete(null)
+          }}
+          variant="danger"
+        />
       </div>
     </>
   )
