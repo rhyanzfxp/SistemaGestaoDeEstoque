@@ -6,6 +6,7 @@ import dashboardRoutes from './routes/dashboard.routes'
 import usersRoutes from './routes/users.routes'
 import productsRoutes from './routes/products.routes'
 import categoriesRoutes from './routes/categories.routes'
+import fornecedoresRoutes from './routes/fornecedores.routes'
 
 dotenv.config()
 
@@ -20,6 +21,7 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/produtos', productsRoutes)
 app.use('/api/categories', categoriesRoutes)
+app.use('/api/fornecedores', fornecedoresRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
