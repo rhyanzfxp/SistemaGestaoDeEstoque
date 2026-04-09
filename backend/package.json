@@ -7,8 +7,7 @@
   "scripts": {
     "dev": "nodemon --exec tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "seed": "tsx src/scripts/seed.ts"
+    "start": "node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +21,7 @@
   },
   "homepage": "https://github.com/rhyanzfxp/SistemaGestaoDeEstoque#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
