@@ -6,6 +6,7 @@ import Products from './pages/Products'
 import Users from './pages/Users'
 import Login from './pages/Login'
 import Categories from './pages/Categories'
+import Fornecedores from './pages/Fornecedores'
 
 function App() {
   return (
@@ -39,13 +40,22 @@ function App() {
           />
           
           <Route
-          path="/categorias"
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
-              <Categories />
+            path="/categorias"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                <Categories />
               </ProtectedRoute>
-              }
-              />
+            }
+          />
+
+          <Route
+            path="/fornecedores"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                <Fornecedores />
+              </ProtectedRoute>
+            }
+          />
               
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>

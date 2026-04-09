@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, Users, LogOut, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Truck, Tags } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Sidebar() {
@@ -292,13 +292,22 @@ export default function Sidebar() {
           </NavLink>
 
           <NavLink
-          to="/categorias"
-          className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
+            to="/categorias"
+            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
           >
-            <LayoutDashboard size={18} className="sb-link__icon" strokeWidth={2} />
+            <Tags size={18} className="sb-link__icon" strokeWidth={2} />
             <span>Categorias</span>
             <ChevronRight size={14} className="sb-link__chevron" />
-            </NavLink>
+          </NavLink>
+
+          <NavLink
+            to="/fornecedores"
+            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
+          >
+            <Truck size={18} className="sb-link__icon" strokeWidth={2} />
+            <span>Fornecedores</span>
+            <ChevronRight size={14} className="sb-link__chevron" />
+          </NavLink>
 
           {user?.perfil === 'ADMIN' && (
             <NavLink
