@@ -1,76 +1,88 @@
 import { Router, Request, Response } from 'express'
-import { randomUUID } from 'crypto'
-import { mockDatabase } from '../config/mockDataBase'
+import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
 
 const router = Router()
 
-router.get('/categorias', authMiddleware, (req: Request, res: Response) => {
+router.get('/categorias', authMiddleware, async (req: Request, res: Response) => {
   try {
-    res.json(mockDatabase.categorias)
+    const { data: categorias, error } = await supabase
+      .from('categorias')
+      .select('*')
+      .order('nome')
+
+    if (error) throw error
+    res.json(categorias)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar categorias' })
   }
 })
 
-router.get('/fornecedores', authMiddleware, (req: Request, res: Response) => {
+router.get('/fornecedores', authMiddleware, async (req: Request, res: Response) => {
   try {
-    res.json(mockDatabase.fornecedores)
+    const { data: fornecedores, error } = await supabase
+      .from('fornecedores')
+      .select('*')
+      .order('nome')
+
+    if (error) throw error
+    res.json(fornecedores)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar fornecedores' })
   }
 })
 
-router.get('/', authMiddleware, (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { search, categoria_id, status, page = '1', limit = '10' } = req.query
 
-    let produtos = mockDatabase.produtos
+    let query = supabase
+      .from('produtos')
+      .select(`
+        *,
+        categorias:categoria_id (nome),
+        fornecedores:fornecedor_id (nome)
+      `, { count: 'exact' })
 
-    // Filtrar por status
+    
     if (status === 'ativo') {
-      produtos = produtos.filter(p => p.ativo === true)
+      query = query.eq('ativo', true)
     } else if (status === 'inativo') {
-      produtos = produtos.filter(p => p.ativo === false)
+      query = query.eq('ativo', false)
     }
-    // Se status for vazio ou não especificado, mostra todos (ativos e inativos)
 
     if (categoria_id) {
-      produtos = produtos.filter(p => p.categoria_id === categoria_id)
+      query = query.eq('categoria_id', categoria_id)
     }
 
     if (search) {
-      produtos = produtos.filter(p =>
-        p.nome.toLowerCase().includes((search as string).toLowerCase()) ||
-        p.codigo.toLowerCase().includes((search as string).toLowerCase())
-      )
+      query = query.or(`nome.ilike.%${search}%,codigo.ilike.%${search}%`)
     }
-
-    const enrichedProducts = produtos.map(p => {
-      const categoria = mockDatabase.categorias.find(c => c.id === p.categoria_id)
-      const fornecedor = mockDatabase.fornecedores.find(f => f.id === p.fornecedor_id)
-      return {
-        ...p,
-        categoria_nome: categoria?.nome || '',
-        fornecedor_nome: fornecedor?.nome || '',
-        estoque_status: p.quantidade_atual <= p.estoque_minimo ? 'crítico' : 'normal'
-      }
-    })
 
     const pageNum = Math.max(1, parseInt(page as string) || 1)
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10))
     const startIndex = (pageNum - 1) * limitNum
-    const endIndex = startIndex + limitNum
 
-    const paginatedProducts = enrichedProducts.slice(startIndex, endIndex)
+    const { data: produtos, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(startIndex, startIndex + limitNum - 1)
+
+    if (error) throw error
+
+    const enrichedProducts = produtos?.map(p => ({
+      ...p,
+      categoria_nome: (p.categorias as any)?.nome || '',
+      fornecedor_nome: (p.fornecedores as any)?.nome || '',
+      estoque_status: p.quantidade_atual <= p.estoque_minimo ? 'crítico' : 'normal'
+    })) || []
 
     res.json({
-      data: paginatedProducts,
+      data: enrichedProducts,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total: enrichedProducts.length,
-        totalPages: Math.ceil(enrichedProducts.length / limitNum)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limitNum)
       }
     })
   } catch (error) {
@@ -86,32 +98,32 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
       return res.status(400).json({ error: 'Todos os campos são obrigatórios' })
     }
 
-    const codigoExists = mockDatabase.produtos.some(p => p.codigo === codigo)
-    if (codigoExists) {
+    const { data: existingProduct } = await supabase
+      .from('produtos')
+      .select('id')
+      .eq('codigo', codigo)
+      .single()
+
+    if (existingProduct) {
       return res.status(400).json({ error: 'Código do produto já existe' })
     }
 
-    const categoriaExists = mockDatabase.categorias.some(c => c.id === categoria_id)
-    const fornecedorExists = mockDatabase.fornecedores.some(f => f.id === fornecedor_id)
+    const { data: novoProduct, error } = await supabase
+      .from('produtos')
+      .insert({
+        codigo,
+        nome,
+        categoria_id,
+        marca,
+        fornecedor_id,
+        quantidade_atual: parseInt(quantidade_atual),
+        estoque_minimo: parseInt(estoque_minimo),
+        ativo: true
+      })
+      .select()
+      .single()
 
-    if (!categoriaExists || !fornecedorExists) {
-      return res.status(400).json({ error: 'Categoria ou fornecedor inválido' })
-    }
-
-    const novoProduct = {
-      id: randomUUID(),
-      codigo,
-      nome,
-      categoria_id,
-      marca,
-      fornecedor_id,
-      quantidade_atual: parseInt(quantidade_atual),
-      estoque_minimo: parseInt(estoque_minimo),
-      ativo: true,
-      created_at: new Date().toISOString()
-    }
-
-    mockDatabase.produtos.push(novoProduct)
+    if (error) throw error
 
     res.status(201).json(novoProduct)
   } catch (error) {
@@ -124,34 +136,40 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
     const { id } = req.params
     const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo, ativo } = req.body
 
-    const produto = mockDatabase.produtos.find(p => p.id === id)
+    if (codigo) {
+      const { data: existingProduct } = await supabase
+        .from('produtos')
+        .select('id')
+        .eq('codigo', codigo)
+        .neq('id', id)
+        .single()
+
+      if (existingProduct) {
+        return res.status(400).json({ error: 'Código do produto já existe' })
+      }
+    }
+
+    const updateData: any = {}
+    if (codigo) updateData.codigo = codigo
+    if (nome) updateData.nome = nome
+    if (categoria_id) updateData.categoria_id = categoria_id
+    if (marca) updateData.marca = marca
+    if (fornecedor_id) updateData.fornecedor_id = fornecedor_id
+    if (quantidade_atual !== undefined) updateData.quantidade_atual = parseInt(quantidade_atual)
+    if (estoque_minimo !== undefined) updateData.estoque_minimo = parseInt(estoque_minimo)
+    if (ativo !== undefined) updateData.ativo = ativo
+
+    const { data: produto, error } = await supabase
+      .from('produtos')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
-
-    if (codigo && codigo !== produto.codigo) {
-      const codigoExists = mockDatabase.produtos.some(p => p.codigo === codigo && p.id !== id)
-      if (codigoExists) {
-        return res.status(400).json({ error: 'Código do produto já existe' })
-      }
-      produto.codigo = codigo
-    }
-
-    if (categoria_id && !mockDatabase.categorias.some(c => c.id === categoria_id)) {
-      return res.status(400).json({ error: 'Categoria inválida' })
-    }
-
-    if (fornecedor_id && !mockDatabase.fornecedores.some(f => f.id === fornecedor_id)) {
-      return res.status(400).json({ error: 'Fornecedor inválido' })
-    }
-
-    if (nome) produto.nome = nome
-    if (categoria_id) produto.categoria_id = categoria_id
-    if (marca) produto.marca = marca
-    if (fornecedor_id) produto.fornecedor_id = fornecedor_id
-    if (quantidade_atual !== undefined) produto.quantidade_atual = parseInt(quantidade_atual)
-    if (estoque_minimo !== undefined) produto.estoque_minimo = parseInt(estoque_minimo)
-    if (ativo !== undefined) produto.ativo = ativo
 
     res.json(produto)
   } catch (error) {
@@ -159,28 +177,29 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
   }
 })
 
-router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const produto = mockDatabase.produtos.find(p => p.id === id)
 
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' })
-    }
+    const { data: movimentacoes } = await supabase
+      .from('movimentacoes')
+      .select('id')
+      .eq('produto_id', id)
+      .limit(1)
 
-    // Verificar se existem movimentações associadas ao produto
-    const temMovimentacoes = mockDatabase.movimentacoes.some(m => m.produto_id === id)
-
-    if (temMovimentacoes) {
+    if (movimentacoes && movimentacoes.length > 0) {
       return res.status(422).json({ 
         error: 'Este produto possui movimentações registradas e não pode ser excluído. Utilize a opção de inativar o produto.',
         canInactivate: true
       })
     }
 
-    // Se não há movimentações, permitir exclusão física
-    const index = mockDatabase.produtos.findIndex(p => p.id === id)
-    mockDatabase.produtos.splice(index, 1)
+    const { error } = await supabase
+      .from('produtos')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
 
     res.json({
       message: 'Produto excluído com sucesso'
@@ -190,16 +209,21 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), (req: Requ
   }
 })
 
-router.patch('/:id/inativar', authMiddleware, requireRole('ADMIN', 'GESTAO'), (req: Request, res: Response) => {
+router.patch('/:id/inativar', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const produto = mockDatabase.produtos.find(p => p.id === id)
 
+    const { data: produto, error } = await supabase
+      .from('produtos')
+      .update({ ativo: false })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
-
-    produto.ativo = false
 
     res.json({
       message: 'Produto inativado com sucesso',
@@ -210,22 +234,29 @@ router.patch('/:id/inativar', authMiddleware, requireRole('ADMIN', 'GESTAO'), (r
   }
 })
 
-router.get('/:id', authMiddleware, (req: Request, res: Response) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const produto = mockDatabase.produtos.find(p => p.id === id)
 
+    const { data: produto, error } = await supabase
+      .from('produtos')
+      .select(`
+        *,
+        categorias:categoria_id (nome),
+        fornecedores:fornecedor_id (nome)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
 
-    const categoria = mockDatabase.categorias.find(c => c.id === produto.categoria_id)
-    const fornecedor = mockDatabase.fornecedores.find(f => f.id === produto.fornecedor_id)
-
     res.json({
       ...produto,
-      categoria_nome: categoria?.nome || '',
-      fornecedor_nome: fornecedor?.nome || ''
+      categoria_nome: (produto.categorias as any)?.nome || '',
+      fornecedor_nome: (produto.fornecedores as any)?.nome || ''
     })
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar produto' })
@@ -234,51 +265,65 @@ router.get('/:id', authMiddleware, (req: Request, res: Response) => {
 
 router.post('/:id/movimentar', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { tipo, quantidade } = req.body; 
+    const { id } = req.params
+    const { tipo, quantidade } = req.body
 
-    const produto = mockDatabase.produtos.find(p => p.id === id);
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
+    const { data: produto, error: produtoError } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (produtoError || !produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' })
     }
 
-    const qtd = parseInt(quantidade);
+    const qtd = parseInt(quantidade)
     if (isNaN(qtd) || qtd <= 0) {
-      return res.status(400).json({ error: 'Quantidade inválida' });
+      return res.status(400).json({ error: 'Quantidade inválida' })
     }
 
     if (tipo === 'SAIDA' && produto.quantidade_atual < qtd) {
-      return res.status(400).json({ error: 'Saldo insuficiente para esta saída' });
+      return res.status(400).json({ error: 'Saldo insuficiente para esta saída' })
     }
 
-    if (tipo === 'ENTRADA') {
-      produto.quantidade_atual += qtd;
-    } else if (tipo === 'SAIDA') {
-      produto.quantidade_atual -= qtd;
-    } else {
-      return res.status(400).json({ error: 'Tipo de movimentação inválido' });
+    if (!['ENTRADA', 'SAIDA'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo de movimentação inválido' })
     }
 
-    const novaMovimentacao: any = {
-      id: randomUUID(),
-      tipo: tipo as 'ENTRADA' | 'SAIDA',
-      produto_id: id,
-      produto_nome: produto.nome,
-      quantidade: qtd,
-      usuario_id: req.user?.id || 'sistema',
-      created_at: new Date().toISOString()
-    };
+    const novaQuantidade = tipo === 'ENTRADA' 
+      ? produto.quantidade_atual + qtd 
+      : produto.quantidade_atual - qtd
 
-    mockDatabase.movimentacoes.push(novaMovimentacao);
+    const { error: updateError } = await supabase
+      .from('produtos')
+      .update({ quantidade_atual: novaQuantidade })
+      .eq('id', id)
+
+    if (updateError) throw updateError
+
+    const { data: novaMovimentacao, error: movError } = await supabase
+      .from('movimentacoes')
+      .insert({
+        tipo,
+        produto_id: id,
+        produto_nome: produto.nome,
+        quantidade: qtd,
+        usuario_id: req.user?.id || null
+      })
+      .select()
+      .single()
+
+    if (movError) throw movError
 
     res.json({
       message: 'Movimentação realizada com sucesso',
-      novo_saldo: produto.quantidade_atual,
+      novo_saldo: novaQuantidade,
       movimentacao: novaMovimentacao
-    });
+    })
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao registrar movimentação' });
+    res.status(500).json({ error: 'Erro ao registrar movimentação' })
   }
-});
+})
 
 export default router

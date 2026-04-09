@@ -1,34 +1,46 @@
 import { Router } from 'express'
-import { mockDatabase } from '../config/mockDataBase'
+import { supabase } from '../config/supabase'
 import { authMiddleware } from '../middleware/auth.middleware'
 
 const router = Router()
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const produtos = mockDatabase.produtos.filter(p => p.ativo)
+    const { data: produtos, error: produtosError } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('ativo', true)
 
-    const totalProdutos = produtos.length
-    const totalItensEstoque = produtos.reduce((sum, p) => sum + p.quantidade_atual, 0)
-    const produtosEstoqueMinimo = produtos.filter(p => p.quantidade_atual <= p.estoque_minimo).length
+    if (produtosError) throw produtosError
+
+    const totalProdutos = produtos?.length || 0
+    const totalItensEstoque = produtos?.reduce((sum, p) => sum + p.quantidade_atual, 0) || 0
+    const produtosEstoqueMinimo = produtos?.filter(p => p.quantidade_atual <= p.estoque_minimo).length || 0
     const produtosProximoVencimento = 0
 
-    const movimentacoes = mockDatabase.movimentacoes
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 10)
+    const { data: movimentacoes, error: movError } = await supabase
+      .from('movimentacoes')
+      .select(`
+        id,
+        tipo,
+        produto_nome,
+        quantidade,
+        created_at,
+        usuarios:usuario_id (nome)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10)
 
-    const ultimasMovimentacoes = movimentacoes.map(m => {
-      const usuario = mockDatabase.usuarios.find(u => u.id === m.usuario_id)
-      
-      return {
-        id: m.id,
-        tipo: m.tipo,
-        produto: m.produto_nome,
-        quantidade: m.quantidade,
-        usuario: usuario?.nome || '',
-        data: m.created_at
-      }
-    })
+    if (movError) throw movError
+
+    const ultimasMovimentacoes = movimentacoes?.map(m => ({
+      id: m.id,
+      tipo: m.tipo,
+      produto: m.produto_nome,
+      quantidade: m.quantidade,
+      usuario: (m.usuarios as any)?.nome || '',
+      data: m.created_at
+    })) || []
 
     res.json({
       totalProdutos,
