@@ -7,6 +7,7 @@ import Users from './pages/Users'
 import Login from './pages/Login'
 import Categories from './pages/Categories'
 import Fornecedores from './pages/Fornecedores'
+import Movimentacoes from './pages/Movimentacoes'
 
 function App() {
   return (
@@ -53,6 +54,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
                 <Fornecedores />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/movimentacoes"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                <Movimentacoes />
               </ProtectedRoute>
             }
           />
