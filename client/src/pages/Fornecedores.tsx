@@ -705,6 +705,9 @@ export default function Fornecedores() {
                       <span style={{ fontSize: 11, color: '#D1D5DB' }}>Sem responsável</span>
                     )}
 
+                    <div style={styles.productBadge(palette)}>
+                      {fornecedor.total_produtos || 0} produto{(fornecedor.total_produtos || 0) !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
               </div>
