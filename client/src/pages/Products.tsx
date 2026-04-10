@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { Package, Plus, Edit2, Eye, AlertTriangle, X, Check, Trash2, RefreshCw, Search, Filter } from 'lucide-react'
+import { Package, Plus, Edit2, Eye, AlertTriangle, X, Check, Trash2, RefreshCw, Search } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 
 interface Produto {
@@ -52,9 +52,6 @@ interface PaginationInfo {
 
 export default function Products() {
   const { token, user } = useAuth()
-  const [showMovModal, setShowMovModal] = useState(false);
-  const [movData, setMovData] = useState({ tipo: 'ENTRADA', quantidade: '' });
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
@@ -197,41 +194,6 @@ export default function Products() {
       setError(err.message || 'Erro ao salvar produto')
     }
   }
-
-  const handleMovimentar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    try {
-      if (!selectedProductId) return;
-
-      const response = await fetch(`/api/produtos/${selectedProductId}/movimentar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          tipo: movData.tipo,
-          quantidade: parseInt(movData.quantidade)
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao movimentar estoque');
-      }
-
-      setSuccess('Estoque atualizado com sucesso!');
-      setShowMovModal(false);
-      setMovData({ tipo: 'ENTRADA', quantidade: '' });
-      fetchProducts(currentPage); 
-    } catch (err) {
-      const errorObj = err as Error;
-      setError(errorObj.message);
-    }
-  };
 
   const handleEdit = (p: Produto) => {
     // Formatar data para o input type="date" (YYYY-MM-DD)
@@ -517,17 +479,6 @@ export default function Products() {
                       )}
                     </td>
                     <td className="products-table__cell products-actions">
-                      <button 
-                      onClick={() => {
-                        setSelectedProductId(p.id);
-                        setShowMovModal(true);
-                        }}
-                        className="products-action-btn"
-                        title="Movimentar"
-                        style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', marginRight: '4px' }}
-                        >
-                          <RefreshCw size={16} />
-                          </button>
                       <button
                         onClick={() => handleEdit(p)}
                         className="products-action-btn products-action-btn--edit"
@@ -715,82 +666,38 @@ export default function Products() {
             </div>
           </div>
         )}
-        {showMovModal && (
-  <div className="products-modal-overlay" onClick={() => setShowMovModal(false)}>
-    <div className="products-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-      <div className="products-modal__header">
-        <h2>Movimentar Estoque</h2>
-        <button onClick={() => setShowMovModal(false)} className="products-modal__close">
-          <X size={20} />
-        </button>
-      </div>
-
-      <form onSubmit={handleMovimentar} className="products-form">
-        <div className="products-form__group">
-          <label>Tipo de Operação</label>
-          <select
-            value={movData.tipo}
-            onChange={(e) => setMovData({ ...movData, tipo: e.target.value })}
-            className="products-input"
-          >
-            <option value="ENTRADA">Entrada (+)</option>
-            <option value="SAIDA">Saída (-)</option>
-          </select>
-        </div>
-
-        <div className="products-form__group">
-          <label>Quantidade</label>
-          <input
-            type="number"
-            min="1"
-            required
-            value={movData.quantidade}
-            onChange={(e) => setMovData({ ...movData, quantidade: e.target.value })}
-            placeholder="Digite a quantidade"
-            className="products-input"
+        
+        {showConfirmDelete && (
+          <ConfirmModal
+            isOpen={showConfirmDelete}
+            title="Excluir Produto"
+            message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+            confirmText="Sim, excluir"
+            cancelText="Cancelar"
+            onConfirm={handleExcluir}
+            onCancel={() => {
+              setShowConfirmDelete(false)
+              setProductToDelete(null)
+            }}
+            variant="danger"
           />
-        </div>
+        )}
 
-        <div className="products-form__actions">
-          <button type="button" onClick={() => setShowMovModal(false)} className="products-btn-cancel">
-            Cancelar
-          </button>
-          <button type="submit" className="products-btn-submit">
-            Confirmar
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-
-        <ConfirmModal
-          isOpen={showConfirmDelete}
-          title="Excluir Produto"
-          message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
-          confirmText="Sim, excluir"
-          cancelText="Cancelar"
-          onConfirm={handleExcluir}
-          onCancel={() => {
-            setShowConfirmDelete(false)
-            setProductToDelete(null)
-          }}
-          variant="danger"
-        />
-
-        <ConfirmModal
-          isOpen={showConfirmInactivate}
-          title="Inativar Produto"
-          message="Este produto possui movimentações e não pode ser excluído. Deseja inativá-lo? O produto será mantido no histórico mas não aparecerá nas listagens."
-          confirmText="Sim, inativar"
-          cancelText="Cancelar"
-          onConfirm={handleInativar}
-          onCancel={() => {
-            setShowConfirmInactivate(false)
-            setProductToDelete(null)
-          }}
-          variant="warning"
-        />
+        {showConfirmInactivate && (
+          <ConfirmModal
+            isOpen={showConfirmInactivate}
+            title="Inativar Produto"
+            message="Este produto possui movimentações e não pode ser excluído. Deseja inativá-lo? O produto será mantido no histórico mas não aparecerá nas listagens."
+            confirmText="Sim, inativar"
+            cancelText="Cancelar"
+            onConfirm={handleInativar}
+            onCancel={() => {
+              setShowConfirmInactivate(false)
+              setProductToDelete(null)
+            }}
+            variant="warning"
+          />
+        )}
       </div>
     </>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Package, AlertTriangle, Calendar, TrendingUp,
   ArrowUpRight, ArrowDownRight, Clock, RefreshCw, Boxes
@@ -72,6 +73,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const { token, user } = useAuth()
+  const navigate = useNavigate()
 
   const firstName = user?.nome?.split(' ')[0] ?? 'Usuário'
 
@@ -124,7 +126,7 @@ export default function Dashboard() {
                 Olá, {firstName}! <span></span>
               </h1>
               <p className="db-header__subtitle">
-                Aqui está o resumo do seu estoque em tempo real
+                 O resumo do seu estoque em tempo real
               </p>
             </div>
 
@@ -133,7 +135,7 @@ export default function Dashboard() {
                 <span className="db-header__badge-dot" />
                 Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <button className="db-action-btn">Nova Movimentação</button>
+              <button className="db-action-btn" onClick={() => navigate('/movimentacoes')}>Nova Movimentação</button>
             </div>
           </header>
 
@@ -166,7 +168,7 @@ export default function Dashboard() {
             <div className="db-mov__header">
               <div>
                 <h2 className="db-mov__title">Últimas Movimentações</h2>
-                <p className="db-mov__subtitle">Histórico recente de entradas, saídas e solicitações</p>
+                <p className="db-mov__subtitle">Histórico recente de entradas e saídas </p>
               </div>
               <div className="db-mov__header-right">
                 <div className="db-mov__count">
@@ -176,7 +178,6 @@ export default function Dashboard() {
                 <div className="db-mov__legend">
                   <span style={{ color: '#34d399' }}>● Entrada</span>
                   <span style={{ color: '#fb7185' }}>● Saída</span>
-                  <span style={{ color: '#fbbf24' }}>● Solicitação</span>
                 </div>
               </div>
             </div>

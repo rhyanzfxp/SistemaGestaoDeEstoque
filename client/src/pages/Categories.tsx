@@ -95,7 +95,18 @@ export default function Categories() {
 
   if (isLoading) {
     return (
-      <div className="products-loading">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        width: '100%',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%)',
+        gap: '16px',
+        color: '#64748b'
+      }}>
+        <style>{productsStyles}</style>
         <RefreshCw size={32} color="#3b82f6" className="products-spinner" />
         <p>Carregando categorias...</p>
       </div>

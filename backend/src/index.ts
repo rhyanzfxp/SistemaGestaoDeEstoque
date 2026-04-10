@@ -7,6 +7,7 @@ import usersRoutes from './routes/users.routes'
 import productsRoutes from './routes/products.routes'
 import categoriesRoutes from './routes/categories.routes'
 import fornecedoresRoutes from './routes/fornecedores.routes'
+import movimentacoesRoutes from './routes/movimentacoes.routes'
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.use('/api/users', usersRoutes)
 app.use('/api/produtos', productsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/fornecedores', fornecedoresRoutes)
+app.use('/api/movimentacoes', movimentacoesRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
