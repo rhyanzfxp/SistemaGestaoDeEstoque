@@ -4,14 +4,14 @@ import { authMiddleware, requireRole } from '../middleware/auth.middleware'
 
 const router = Router()
 
-// Listar todos os fornecedores
+
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { search, page = '1', limit = '10' } = req.query
 
     let query = supabase
       .from('fornecedores')
-      .select('*, produtos(count)', { count: 'exact' })
+      .select('*', { count: 'exact' })
 
     if (search) {
       query = query.or(`nome.ilike.%${search}%,cnpj.ilike.%${search}%,contato.ilike.%${search}%`)
@@ -27,13 +27,23 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    const enrichedFornecedores = fornecedores?.map(f => ({
-      ...f,
-      total_produtos: Array.isArray(f.produtos) ? f.produtos.length : 0
-    })) || []
+    
+    const fornecedoresComProdutos = await Promise.all(
+      (fornecedores || []).map(async (fornecedor) => {
+        const { count: produtosCount } = await supabase
+          .from('produtos')
+          .select('*', { count: 'exact', head: true })
+          .eq('fornecedor_id', fornecedor.id)
+
+        return {
+          ...fornecedor,
+          total_produtos: produtosCount || 0
+        }
+      })
+    )
 
     res.json({
-      data: enrichedFornecedores,
+      data: fornecedoresComProdutos,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -46,7 +56,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
   }
 })
 
-// Buscar fornecedor por ID
+
 router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { id } = req.params
@@ -71,7 +81,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
   }
 })
 
-// Criar novo fornecedor
+
 router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { nome, cnpj, email, telefone, contato } = req.body
@@ -112,7 +122,7 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
   }
 })
 
-// Atualizar fornecedor
+
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
@@ -156,12 +166,12 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
   }
 })
 
-// Deletar fornecedor
+
 router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
 
-    // Verificar se existem produtos vinculados
+    
     const { data: produtos } = await supabase
       .from('produtos')
       .select('id')

@@ -9,6 +9,7 @@ interface DashboardData {
   totalProdutos: number
   totalItensEstoque: number
   produtosEstoqueMinimo: number
+  produtosVencidos: number
   produtosProximoVencimento: number
   ultimasMovimentacoes: Array<{
     id: string
@@ -47,12 +48,22 @@ function getMovLabel(tipo: 'ENTRADA' | 'SAIDA' | 'SOLICITACAO') {
   return                         'Solicitação pendente'
 }
 
-const getStats = (data: DashboardData | null) => [
-  { label: 'Total de Produtos',       sublabel: 'produtos cadastrados',       value: data?.totalProdutos ?? 0,            icon: Package,       tag: 'TOTAL',   accent: '#2563eb', accentFaint: 'rgba(37,99,235,0.08)',  accentBorder: 'rgba(37,99,235,0.2)',  iconColor: '#3b82f6' },
-  { label: 'Total de Itens',          sublabel: 'unidades disponíveis',        value: data?.totalItensEstoque ?? 0,        icon: TrendingUp,    tag: 'ESTOQUE', accent: '#10b981', accentFaint: 'rgba(16,185,129,0.08)',  accentBorder: 'rgba(16,185,129,0.2)',  iconColor: '#34d399' },
-  { label: 'Estoque Mínimo',          sublabel: 'produtos abaixo do mínimo',   value: data?.produtosEstoqueMinimo ?? 0,    icon: AlertTriangle, tag: 'ALERTA',  accent: '#f59e0b', accentFaint: 'rgba(245,158,11,0.08)',  accentBorder: 'rgba(245,158,11,0.2)',  iconColor: '#fbbf24' },
-  { label: 'Próximo ao Vencimento',   sublabel: 'produtos a vencer',           value: data?.produtosProximoVencimento ?? 0,icon: Calendar,      tag: 'URGENTE', accent: '#f43f5e', accentFaint: 'rgba(244,63,94,0.08)',   accentBorder: 'rgba(244,63,94,0.2)',   iconColor: '#fb7185' },
-]
+const getStats = (data: DashboardData | null) => {
+  const totalVencimento = (data?.produtosVencidos ?? 0) + (data?.produtosProximoVencimento ?? 0)
+  const labelVencimento = data?.produtosVencidos && data.produtosVencidos > 0 
+    ? 'Vencidos e Próximos' 
+    : 'Próximo ao Vencimento'
+  const sublabelVencimento = data?.produtosVencidos && data.produtosVencidos > 0
+    ? `${data.produtosVencidos} vencido${data.produtosVencidos > 1 ? 's' : ''}, ${data.produtosProximoVencimento} próximo${data.produtosProximoVencimento !== 1 ? 's' : ''}`
+    : 'produtos que vão vencer'
+  
+  return [
+    { label: 'Total de Produtos',       sublabel: 'produtos cadastrados',       value: data?.totalProdutos ?? 0,            icon: Package,       tag: 'TOTAL',   accent: '#2563eb', accentFaint: 'rgba(37,99,235,0.08)',  accentBorder: 'rgba(37,99,235,0.2)',  iconColor: '#3b82f6' },
+    { label: 'Total de Itens',          sublabel: 'unidades disponíveis',        value: data?.totalItensEstoque ?? 0,        icon: TrendingUp,    tag: 'ESTOQUE', accent: '#10b981', accentFaint: 'rgba(16,185,129,0.08)',  accentBorder: 'rgba(16,185,129,0.2)',  iconColor: '#34d399' },
+    { label: 'Estoque Mínimo',          sublabel: 'produtos abaixo do mínimo',   value: data?.produtosEstoqueMinimo ?? 0,    icon: AlertTriangle, tag: 'ALERTA',  accent: '#f59e0b', accentFaint: 'rgba(245,158,11,0.08)',  accentBorder: 'rgba(245,158,11,0.2)',  iconColor: '#fbbf24' },
+    { label: labelVencimento,           sublabel: sublabelVencimento,            value: totalVencimento,                     icon: Calendar,      tag: 'URGENTE', accent: '#f43f5e', accentFaint: 'rgba(244,63,94,0.08)',   accentBorder: 'rgba(244,63,94,0.2)',   iconColor: '#fb7185' },
+  ]
+}
 
 
 

@@ -7,9 +7,9 @@ interface Produto {
   id: string
   codigo: string
   nome: string
+  data_validade?: string
   categoria_id: string
   categoria_nome?: string
-  marca: string
   fornecedor_id: string
   fornecedor_nome?: string
   quantidade_atual: number
@@ -35,8 +35,8 @@ interface Fornecedor {
 interface FormData {
   codigo: string
   nome: string
+  data_validade?: string
   categoria_id: string
-  marca: string
   fornecedor_id: string
   quantidade_atual: number | string
   estoque_minimo: number | string
@@ -75,8 +75,8 @@ export default function Products() {
   const [formData, setFormData] = useState<FormData>({
     codigo: '',
     nome: '',
+    data_validade: '',
     categoria_id: '',
-    marca: '',
     fornecedor_id: '',
     quantidade_atual: '',
     estoque_minimo: '',
@@ -162,7 +162,7 @@ export default function Products() {
     setSuccess('')
 
     try {
-      if (!formData.codigo || !formData.nome || !formData.categoria_id || !formData.marca || !formData.fornecedor_id || formData.quantidade_atual === '' || formData.estoque_minimo === '') {
+      if (!formData.codigo || !formData.nome || !formData.categoria_id || !formData.fornecedor_id || formData.quantidade_atual === '' || formData.estoque_minimo === '') {
         setError('Preencha todos os campos obrigatórios')
         return
       }
@@ -234,11 +234,14 @@ export default function Products() {
   };
 
   const handleEdit = (p: Produto) => {
+    // Formatar data para o input type="date" (YYYY-MM-DD)
+    const dataFormatada = p.data_validade ? p.data_validade.split('T')[0] : ''
+    
     setFormData({
       codigo: p.codigo,
       nome: p.nome,
+      data_validade: dataFormatada,
       categoria_id: p.categoria_id,
-      marca: p.marca,
       fornecedor_id: p.fornecedor_id,
       quantidade_atual: p.quantidade_atual,
       estoque_minimo: p.estoque_minimo,
@@ -308,8 +311,8 @@ export default function Products() {
     setFormData({
       codigo: '',
       nome: '',
+      data_validade: '',
       categoria_id: categorias[0]?.id || '',
-      marca: '',
       fornecedor_id: fornecedores[0]?.id || '',
       quantidade_atual: '',
       estoque_minimo: '',
@@ -414,7 +417,7 @@ export default function Products() {
                 <tr>
                   <th>Código</th>
                   <th>Produto</th>
-                  <th>Marca</th>
+                  <th>Fornecedor</th>
                   <th>Categoria</th>
                   <th>Saldo atual</th>
                   <th>Estoque mínimo</th>
@@ -423,15 +426,76 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody>
-                {produtos.map((p) => (
-                  <tr key={p.id} className="products-table__row">
+                {produtos.map((p) => {
+                  // Calcular status de validade
+                  let validadeStatus: 'vencido' | 'proximo' | 'ok' = 'ok'
+                  if (p.data_validade) {
+                    const hoje = new Date()
+                    hoje.setHours(0, 0, 0, 0)
+                    const [ano, mes, dia] = p.data_validade.split('T')[0].split('-')
+                    const dataValidade = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia))
+                    dataValidade.setHours(0, 0, 0, 0)
+                    
+                    const dataLimite = new Date(hoje)
+                    dataLimite.setDate(hoje.getDate() + 15)
+                    
+                    if (dataValidade < hoje) {
+                      validadeStatus = 'vencido'
+                    } else if (dataValidade <= dataLimite) {
+                      validadeStatus = 'proximo'
+                    }
+                  }
+                  
+                  return (
+                  <tr key={p.id} className="products-table__row" style={{
+                    background: validadeStatus === 'vencido' ? 'rgba(244, 63, 94, 0.05)' : 
+                                validadeStatus === 'proximo' ? 'rgba(251, 191, 36, 0.05)' : 
+                                undefined
+                  }}>
                     <td className="products-table__cell">
                       <span className="products-codigo">{p.codigo}</span>
                     </td>
                     <td className="products-table__cell">
-                      <span className="products-name">{p.nome}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span className="products-name">{p.nome}</span>
+                        {p.data_validade && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              Validade: {p.data_validade.split('T')[0].split('-').reverse().join('/')}
+                            </span>
+                            {validadeStatus === 'vencido' && (
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                color: '#dc2626',
+                                background: 'rgba(244, 63, 94, 0.15)',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                VENCIDO
+                              </span>
+                            )}
+                            {validadeStatus === 'proximo' && (
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                color: '#d97706',
+                                background: 'rgba(251, 191, 36, 0.15)',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                VENCE EM BREVE
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="products-table__cell">{p.marca}</td>
+                    <td className="products-table__cell">{p.fornecedor_nome || '-'}</td>
                     <td className="products-table__cell">
                       <span className="products-categoria">{p.categoria_nome || '-'}</span>
                     </td>
@@ -495,7 +559,8 @@ export default function Products() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           ) : (
@@ -564,12 +629,11 @@ export default function Products() {
                   </div>
 
                   <div className="products-form__group">
-                    <label>Marca *</label>
+                    <label>Data de Validade</label>
                     <input
-                      type="text"
-                      value={formData.marca}
-                      onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                      placeholder="Marca"
+                      type="date"
+                      value={formData.data_validade}
+                      onChange={(e) => setFormData({ ...formData, data_validade: e.target.value })}
                       className="products-input"
                     />
                   </div>

@@ -92,9 +92,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
-    const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo } = req.body
+    const { codigo, nome, data_validade, categoria_id, fornecedor_id, quantidade_atual, estoque_minimo } = req.body
 
-    if (!codigo || !nome || !categoria_id || !marca || !fornecedor_id || quantidade_atual === undefined || estoque_minimo === undefined) {
+    if (!codigo || !nome || !categoria_id || !fornecedor_id || quantidade_atual === undefined || estoque_minimo === undefined) {
       return res.status(400).json({ error: 'Todos os campos são obrigatórios' })
     }
 
@@ -113,8 +113,8 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
       .insert({
         codigo,
         nome,
+        data_validade: data_validade || null,
         categoria_id,
-        marca,
         fornecedor_id,
         quantidade_atual: parseInt(quantidade_atual),
         estoque_minimo: parseInt(estoque_minimo),
@@ -134,7 +134,7 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { codigo, nome, categoria_id, marca, fornecedor_id, quantidade_atual, estoque_minimo, ativo } = req.body
+    const { codigo, nome, data_validade, categoria_id, fornecedor_id, quantidade_atual, estoque_minimo, ativo } = req.body
 
     if (codigo) {
       const { data: existingProduct } = await supabase
@@ -152,8 +152,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
     const updateData: any = {}
     if (codigo) updateData.codigo = codigo
     if (nome) updateData.nome = nome
+    if (data_validade !== undefined) updateData.data_validade = data_validade || null
     if (categoria_id) updateData.categoria_id = categoria_id
-    if (marca) updateData.marca = marca
     if (fornecedor_id) updateData.fornecedor_id = fornecedor_id
     if (quantidade_atual !== undefined) updateData.quantidade_atual = parseInt(quantidade_atual)
     if (estoque_minimo !== undefined) updateData.estoque_minimo = parseInt(estoque_minimo)
