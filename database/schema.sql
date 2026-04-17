@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 CREATE TABLE IF NOT EXISTS categorias (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome VARCHAR(255) NOT NULL,
-  tipo VARCHAR(50) CHECK (tipo IN ('alimentício', 'escolar', 'escritório', 'uso coletivo')) NOT NULL,
+  tipo VARCHAR(50) CHECK (tipo IN ('alimentício', 'escolar', 'escritório', 'uso coletivo', 'limpeza', 'higiene', 'bebidas', 'medicamentos', 'eletrônicos', 'ferramentas', 'vestuário', 'outros')) NOT NULL,
   perecivel BOOLEAN DEFAULT false,
   prazo_alerta INTEGER DEFAULT 30,
   descricao TEXT,
@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS movimentacoes (
   produto_nome VARCHAR(255) NOT NULL,
   quantidade INTEGER NOT NULL,
   usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+  fornecedor_id UUID REFERENCES fornecedores(id) ON DELETE SET NULL,
   observacao TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -65,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_produtos_categoria ON produtos(categoria_id);
 CREATE INDEX IF NOT EXISTS idx_produtos_fornecedor ON produtos(fornecedor_id);
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_produto ON movimentacoes(produto_id);
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_usuario ON movimentacoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_movimentacoes_fornecedor ON movimentacoes(fornecedor_id);
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_created_at ON movimentacoes(created_at DESC);
 
 

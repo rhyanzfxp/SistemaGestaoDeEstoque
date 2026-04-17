@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'; 
 
@@ -21,7 +21,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, res) => {
   try {
-    const { nome, tipo, perecivel, prazo_alerta } = req.body;
+    const { nome, tipo, perecivel } = req.body;
 
     if (!nome || !tipo) {
       return res.status(400).json({ error: 'Nome e tipo são obrigatórios' });
@@ -32,10 +32,7 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, res
       .insert({
         nome,
         tipo,
-        perecivel: !!perecivel,
-        prazo_alerta: prazo_alerta !== undefined && prazo_alerta !== '' 
-          ? Number(prazo_alerta) 
-          : (perecivel ? 3 : 30)
+        perecivel: !!perecivel
       })
       .select()
       .single()
@@ -51,13 +48,12 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, res
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, tipo, perecivel, prazo_alerta } = req.body;
+    const { nome, tipo, perecivel } = req.body;
 
     const updateData: any = {}
     if (nome) updateData.nome = nome
     if (tipo) updateData.tipo = tipo
     if (perecivel !== undefined) updateData.perecivel = !!perecivel
-    if (prazo_alerta !== undefined && prazo_alerta !== '') updateData.prazo_alerta = Number(prazo_alerta)
 
     const { data: categoriaAtualizada, error } = await supabase
       .from('categorias')
@@ -74,6 +70,41 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, r
     res.json(categoriaAtualizada);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar categoria' });
+  }
+});
+
+router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('DELETE recebido para ID:', id);
+
+    const { data: produtos } = await supabase
+      .from('produtos')
+      .select('id')
+      .eq('categoria_id', id)
+      .limit(1);
+
+    if (produtos && produtos.length > 0) {
+      return res.status(400).json({ 
+        error: 'Não é possível excluir esta categoria pois existem produtos vinculados a ela' 
+      });
+    }
+
+    const { error } = await supabase
+      .from('categorias')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro Supabase:', error);
+      throw error;
+    }
+
+    console.log('Categoria excluída com sucesso');
+    res.json({ message: 'Categoria excluída com sucesso' });
+  } catch (error: any) {
+    console.error('Erro ao excluir categoria:', error);
+    res.status(500).json({ error: error.message || 'Erro ao excluir categoria' });
   }
 });
 

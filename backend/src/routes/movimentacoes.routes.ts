@@ -35,10 +35,10 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       query = query.eq('usuario_id', usuario_id)
     }
     if (data_inicio) {
-      query = query.gte('created_at', data_inicio)
+      query = query.gte('created_at', data_inicio + 'T00:00:00')
     }
     if (data_fim) {
-      query = query.lte('created_at', data_fim)
+      query = query.lte('created_at', data_fim + 'T23:59:59')
     }
 
     const pageNum = Math.max(1, parseInt(page as string) || 1)
@@ -80,20 +80,29 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 router.get('/entradas', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { page = '1', limit = '10' } = req.query
+    const { page = '1', limit = '10', data_inicio, data_fim } = req.query
 
     const pageNum = Math.max(1, parseInt(page as string) || 1)
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10))
     const startIndex = (pageNum - 1) * limitNum
 
-    const { data: movimentacoes, error, count } = await supabase
+    let query = supabase
       .from('movimentacoes')
       .select(`
         *,
         usuario:usuarios(nome),
-        produto:produtos(fornecedor:fornecedores(nome))
+        fornecedor:fornecedores(nome)
       `, { count: 'exact' })
       .eq('tipo', 'ENTRADA')
+
+    if (data_inicio) {
+      query = query.gte('created_at', data_inicio + 'T00:00:00')
+    }
+    if (data_fim) {
+      query = query.lte('created_at', data_fim + 'T23:59:59')
+    }
+
+    const { data: movimentacoes, error, count } = await query
       .order('created_at', { ascending: false })
       .range(startIndex, startIndex + limitNum - 1)
 
@@ -101,9 +110,11 @@ router.get('/entradas', authMiddleware, async (req: Request, res: Response) => {
 
     const formattedData = movimentacoes?.map(mov => ({
       id: mov.id,
+      produto_id: mov.produto_id,
       produto_nome: mov.produto_nome,
       quantidade: mov.quantidade,
-      fornecedor_nome: mov.produto?.fornecedor?.nome || '-',
+      fornecedor_id: mov.fornecedor_id,
+      fornecedor_nome: mov.fornecedor?.nome || '-',
       numero_nf: mov.observacao?.match(/NF:\s*(\S+)/)?.[1] || '-',
       usuario_nome: mov.usuario?.nome || 'Usuário desconhecido',
       created_at: mov.created_at,
@@ -127,19 +138,28 @@ router.get('/entradas', authMiddleware, async (req: Request, res: Response) => {
 
 router.get('/saidas', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { page = '1', limit = '10' } = req.query
+    const { page = '1', limit = '10', data_inicio, data_fim } = req.query
 
     const pageNum = Math.max(1, parseInt(page as string) || 1)
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10))
     const startIndex = (pageNum - 1) * limitNum
 
-    const { data: movimentacoes, error, count } = await supabase
+    let query = supabase
       .from('movimentacoes')
       .select(`
         *,
         usuario:usuarios(nome)
       `, { count: 'exact' })
       .eq('tipo', 'SAIDA')
+
+    if (data_inicio) {
+      query = query.gte('created_at', data_inicio + 'T00:00:00')
+    }
+    if (data_fim) {
+      query = query.lte('created_at', data_fim + 'T23:59:59')
+    }
+
+    const { data: movimentacoes, error, count } = await query
       .order('created_at', { ascending: false })
       .range(startIndex, startIndex + limitNum - 1)
 
@@ -147,6 +167,7 @@ router.get('/saidas', authMiddleware, async (req: Request, res: Response) => {
 
     const formattedData = movimentacoes?.map(mov => ({
       id: mov.id,
+      produto_id: mov.produto_id,
       produto_nome: mov.produto_nome,
       quantidade: mov.quantidade,
       motivo: mov.observacao?.match(/Motivo:\s*([^\n]+)/)?.[1] || mov.observacao || '-',
@@ -210,6 +231,7 @@ router.post('/entrada', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (r
         produto_nome: produto.nome,
         quantidade: parseInt(quantidade),
         usuario_id,
+        fornecedor_id: fornecedor_id || null,
         observacao: obs,
         created_at: dataMovimentacao
       })
@@ -285,6 +307,7 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
         produto_nome: produto.nome,
         quantidade: parseInt(quantidade),
         usuario_id,
+        fornecedor_id: null,
         observacao: obs,
         created_at: dataMovimentacao
       })
@@ -373,6 +396,10 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       created_at: dataMovimentacao
     }
 
+    if (movimentacaoAtual.tipo === 'ENTRADA' && fornecedor_id !== undefined) {
+      updateData.fornecedor_id = fornecedor_id || null
+    }
+
     const { error: updateMovError } = await supabase
       .from('movimentacoes')
       .update(updateData)
@@ -413,7 +440,7 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 
     const { data: movimentacao, error: movError } = await supabase
       .from('movimentacoes')
-      .select('*, produto:produtos(quantidade_atual)')
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -421,26 +448,11 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       return res.status(404).json({ error: 'Movimentação não encontrada' })
     }
 
-    const produto = movimentacao.produto
-    let novaQuantidade = produto.quantidade_atual
-
-    if (movimentacao.tipo === 'ENTRADA') {
-      novaQuantidade = produto.quantidade_atual - movimentacao.quantidade
-      if (novaQuantidade < 0) {
-        return res.status(400).json({ 
-          error: 'Não é possível excluir esta entrada pois resultaria em estoque negativo' 
-        })
-      }
-    } else if (movimentacao.tipo === 'SAIDA') {
-      novaQuantidade = produto.quantidade_atual + movimentacao.quantidade
-    }
-
-    const { error: updateError } = await supabase
-      .from('produtos')
-      .update({ quantidade_atual: novaQuantidade })
-      .eq('id', movimentacao.produto_id)
-
-    if (updateError) throw updateError
+    console.log('Excluindo movimentação (sem alterar estoque):', {
+      tipo: movimentacao.tipo,
+      quantidade: movimentacao.quantidade,
+      produto: movimentacao.produto_nome
+    })
 
     const { error: deleteError } = await supabase
       .from('movimentacoes')
@@ -448,16 +460,14 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       .eq('id', id)
 
     if (deleteError) {
-      await supabase
-        .from('produtos')
-        .update({ quantidade_atual: produto.quantidade_atual })
-        .eq('id', movimentacao.produto_id)
       throw deleteError
     }
 
+    console.log('Movimentação excluída com sucesso. Estoque mantido.')
+
     res.json({ 
-      message: 'Movimentação excluída com sucesso',
-      estoque_atualizado: novaQuantidade
+      message: 'Movimentação excluída com sucesso. Estoque mantido.',
+      estoque_mantido: true
     })
   } catch (error) {
     console.error('Erro ao excluir movimentação:', error)
