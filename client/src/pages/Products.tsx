@@ -196,7 +196,6 @@ export default function Products() {
   }
 
   const handleEdit = (p: Produto) => {
-    // Formatar data para o input type="date" (YYYY-MM-DD)
     const dataFormatada = p.data_validade ? p.data_validade.split('T')[0] : ''
     
     setFormData({
@@ -227,11 +226,9 @@ export default function Products() {
       const data = await response.json()
 
       if (response.status === 422) {
-        // Produto tem movimentações, mostrar opção de inativar
         setError(data.error)
         setShowConfirmDelete(false)
         
-        // Mostrar modal de inativação (mantém productToDelete)
         setTimeout(() => {
           setShowConfirmInactivate(true)
         }, 100)
@@ -389,7 +386,6 @@ export default function Products() {
               </thead>
               <tbody>
                 {produtos.map((p) => {
-                  // Calcular status de validade
                   let validadeStatus: 'vencido' | 'proximo' | 'ok' = 'ok'
                   if (p.data_validade) {
                     const hoje = new Date()

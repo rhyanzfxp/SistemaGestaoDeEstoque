@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal'
 interface Movimentacao {
   id: string
   tipo: 'ENTRADA' | 'SAIDA'
+  produto_id?: string
   produto_nome: string
   quantidade: number
   usuario_nome: string
@@ -15,6 +16,7 @@ interface Movimentacao {
 
 interface Entrada extends Movimentacao {
   fornecedor_nome: string
+  fornecedor_id?: string
   numero_nf: string
 }
 
@@ -112,15 +114,23 @@ export default function Movimentacoes() {
     setLoading(true)
     try {
       let url = '/api/movimentacoes'
-      if (activeTab === 'entrada') url = '/api/movimentacoes/entradas'
-      if (activeTab === 'saida') url = '/api/movimentacoes/saidas'
-
+      const params = new URLSearchParams()
       
-      if (activeTab === 'historico') {
-        const params = new URLSearchParams()
-        if (filterTipo) params.set('tipo', filterTipo)
-        if (filterData) params.set('data_inicio', filterData)
-        if (params.toString()) url += '?' + params.toString()
+      if (activeTab === 'entrada') {
+        url = '/api/movimentacoes/entradas'
+      } else if (activeTab === 'saida') {
+        url = '/api/movimentacoes/saidas'
+      }
+
+      if (filterTipo && activeTab === 'historico') {
+        params.set('tipo', filterTipo)
+      }
+      if (filterData) {
+        params.set('data_inicio', filterData)
+      }
+      
+      if (params.toString()) {
+        url += '?' + params.toString()
       }
 
       const response = await fetch(url, {
@@ -155,25 +165,30 @@ export default function Movimentacoes() {
     setShowModal(true)
   }
 
-  const handleEdit = (mov: Entrada | Saida) => {
-    
+  const handleEdit = async (mov: Entrada | Saida) => {
     let numero_nf = ''
     let motivo = ''
+    let observacaoLimpa = ''
+    let fornecedor_id = ''
     
     if (activeTab === 'entrada') {
       numero_nf = mov.observacao?.match(/NF:\s*(\S+)/)?.[1] || ''
+      observacaoLimpa = mov.observacao?.replace(/^NF:\s*\S+\s*\n?/, '').trim() || ''
+      
+      fornecedor_id = (mov as Entrada).fornecedor_id || ''
     } else {
       motivo = mov.observacao?.match(/Motivo:\s*([^\n]+)/)?.[1] || ''
+      observacaoLimpa = mov.observacao?.replace(/^Motivo:\s*[^\n]+\s*\n?/, '').trim() || ''
     }
 
     setFormData({
       produto_id: '', 
       quantidade: mov.quantidade.toString(),
-      fornecedor_id: '',
+      fornecedor_id,
       numero_nf,
       motivo,
       data: mov.created_at.split('T')[0],
-      observacao: mov.observacao || ''
+      observacao: observacaoLimpa
     })
     setEditingMov(mov.id)
     setError('')
@@ -287,11 +302,17 @@ export default function Movimentacoes() {
         throw new Error(errorData.error || 'Erro ao excluir movimentação')
       }
 
-      setSuccess('Movimentação excluída com sucesso!')
+      const result = await response.json()
+      console.log('Resultado da exclusão:', result)
+
+      setSuccess('Movimentação excluída com sucesso! Estoque mantido.')
       setShowConfirmDelete(false)
       setMovToDelete(null)
-      fetchData()
-      fetchProdutos()
+      
+      setTimeout(async () => {
+        await fetchData()
+        await fetchProdutos()
+      }, 100)
     } catch (err: any) {
       setError(err.message || 'Erro ao excluir movimentação')
       setShowConfirmDelete(false)
@@ -368,6 +389,56 @@ export default function Movimentacoes() {
         </div>
 
         <div className="mov-content">
+          <div className="mov-filters">
+            <div className="mov-filter-search">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Buscar por produto, setor ou responsável..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mov-filter-input"
+              />
+            </div>
+
+            {activeTab === 'historico' && (
+              <div className="mov-filter-group">
+                <Filter size={16} />
+                <select
+                  value={filterTipo}
+                  onChange={(e) => setFilterTipo(e.target.value)}
+                  className="mov-filter-select"
+                >
+                  <option value="">Todos os tipos</option>
+                  <option value="ENTRADA">Entrada</option>
+                  <option value="SAIDA">Saída</option>
+                </select>
+              </div>
+            )}
+
+            <div className="mov-filter-group">
+              <Calendar size={16} />
+              <input
+                type="date"
+                value={filterData}
+                onChange={(e) => setFilterData(e.target.value)}
+                className="mov-filter-date"
+                placeholder="dd/mm/aaaa"
+              />
+            </div>
+
+            {activeTab === 'historico' && (
+              <button
+                onClick={() => setShowConfirmClearHistory(true)}
+                className="mov-btn-clear-history"
+                title="Limpar histórico"
+              >
+                <Trash2 size={18} />
+                Limpar Histórico
+              </button>
+            )}
+          </div>
+
           {(activeTab === 'entrada' || activeTab === 'saida') && (
             <div className="mov-action-bar">
               <button onClick={handleOpenModal} className="mov-btn-primary">
@@ -393,7 +464,18 @@ export default function Movimentacoes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {entradas.map(entrada => {
+                  {entradas
+                    .filter(entrada => {
+                      if (!searchTerm) return true
+                      const search = searchTerm.toLowerCase()
+                      return (
+                        entrada.produto_nome.toLowerCase().includes(search) ||
+                        entrada.fornecedor_nome.toLowerCase().includes(search) ||
+                        entrada.usuario_nome.toLowerCase().includes(search) ||
+                        entrada.numero_nf.toLowerCase().includes(search)
+                      )
+                    })
+                    .map(entrada => {
                     const obsLimpa = entrada.observacao?.replace(/^NF:\s*\S+\s*\n?/, '').trim() || '-'
                     return (
                     <tr key={entrada.id}>
@@ -434,8 +516,17 @@ export default function Movimentacoes() {
                   })}
                 </tbody>
               </table>
-              {entradas.length === 0 && (
-                <div className="mov-empty">Nenhuma entrada registrada</div>
+              {entradas.filter(entrada => {
+                if (!searchTerm) return true
+                const search = searchTerm.toLowerCase()
+                return (
+                  entrada.produto_nome.toLowerCase().includes(search) ||
+                  entrada.fornecedor_nome.toLowerCase().includes(search) ||
+                  entrada.usuario_nome.toLowerCase().includes(search) ||
+                  entrada.numero_nf.toLowerCase().includes(search)
+                )
+              }).length === 0 && (
+                <div className="mov-empty">Nenhuma entrada encontrada</div>
               )}
             </div>
           )}
@@ -455,7 +546,17 @@ export default function Movimentacoes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {saidas.map(saida => {
+                  {saidas
+                    .filter(saida => {
+                      if (!searchTerm) return true
+                      const search = searchTerm.toLowerCase()
+                      return (
+                        saida.produto_nome.toLowerCase().includes(search) ||
+                        saida.motivo.toLowerCase().includes(search) ||
+                        saida.usuario_nome.toLowerCase().includes(search)
+                      )
+                    })
+                    .map(saida => {
                     const obsLimpa = saida.observacao?.replace(/^Motivo:\s*[^\n]+\s*\n?/, '').trim() || '-'
                     return (
                     <tr key={saida.id}>
@@ -495,60 +596,22 @@ export default function Movimentacoes() {
                   })}
                 </tbody>
               </table>
-              {saidas.length === 0 && (
-                <div className="mov-empty">Nenhuma saída registrada</div>
+              {saidas.filter(saida => {
+                if (!searchTerm) return true
+                const search = searchTerm.toLowerCase()
+                return (
+                  saida.produto_nome.toLowerCase().includes(search) ||
+                  saida.motivo.toLowerCase().includes(search) ||
+                  saida.usuario_nome.toLowerCase().includes(search)
+                )
+              }).length === 0 && (
+                <div className="mov-empty">Nenhuma saída encontrada</div>
               )}
             </div>
           )}
 
           {activeTab === 'historico' && (
             <>
-              <div className="mov-filters">
-                <div className="mov-filter-search">
-                  <Search size={18} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por produto, setor ou responsável..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="mov-filter-input"
-                  />
-                </div>
-
-                <div className="mov-filter-group">
-                  <Filter size={16} />
-                  <select
-                    value={filterTipo}
-                    onChange={(e) => setFilterTipo(e.target.value)}
-                    className="mov-filter-select"
-                  >
-                    <option value="">Todos os tipos</option>
-                    <option value="ENTRADA">Entrada</option>
-                    <option value="SAIDA">Saída</option>
-                  </select>
-                </div>
-
-                <div className="mov-filter-group">
-                  <Calendar size={16} />
-                  <input
-                    type="date"
-                    value={filterData}
-                    onChange={(e) => setFilterData(e.target.value)}
-                    className="mov-filter-date"
-                    placeholder="dd/mm/aaaa"
-                  />
-                </div>
-
-                <button
-                  onClick={() => setShowConfirmClearHistory(true)}
-                  className="mov-btn-clear-history"
-                  title="Limpar histórico"
-                >
-                  <Trash2 size={18} />
-                  Limpar Histórico
-                </button>
-              </div>
-
               <div className="mov-table-wrapper">
                 <table className="mov-table">
                   <thead>
@@ -731,7 +794,7 @@ export default function Movimentacoes() {
         <ConfirmModal
           isOpen={showConfirmDelete}
           title="Excluir Movimentação"
-          message="Tem certeza que deseja excluir esta movimentação? O estoque será ajustado automaticamente. Esta ação não pode ser desfeita."
+          message="Tem certeza que deseja excluir esta movimentação? O estoque atual será mantido. Esta ação não pode ser desfeita."
           confirmText="Sim, excluir"
           cancelText="Cancelar"
           onConfirm={handleDelete}

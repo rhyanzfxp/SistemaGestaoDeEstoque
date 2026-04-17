@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, X, AlertTriangle, Check, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, X, AlertTriangle, Check, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-type CategoriaTipo = 'alimentício' | 'escolar' | 'escritório' | 'uso coletivo';
+type CategoriaTipo = 'alimentício' | 'escolar' | 'escritório' | 'uso coletivo' | 'limpeza' | 'higiene' | 'bebidas' | 'medicamentos' | 'eletrônicos' | 'ferramentas' | 'vestuário' | 'outros';
 
 interface Categoria {
-  id: number;
+  id: string;
   nome: string;
   tipo: CategoriaTipo;
   perecivel: boolean;
-  prazo_alerta: number;
 }
 
 export default function Categories() {
-  const { token } = useAuth(); 
+  const { token, logout } = useAuth();
+  const navigate = useNavigate();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,18 +27,16 @@ export default function Categories() {
   const [formData, setFormData] = useState({
     nome: '',
     tipo: 'alimentício' as CategoriaTipo,
-    perecivel: false,
-    prazo_alerta: '' as string | number
+    perecivel: false
   });
 
   const handleEdit = (cat: Categoria) => {
     setFormData({
       nome: cat.nome,
       tipo: cat.tipo,
-      perecivel: cat.perecivel,
-      prazo_alerta: cat.prazo_alerta.toString()
+      perecivel: cat.perecivel
     });
-    setEditingId(cat.id.toString());
+    setEditingId(cat.id);
     setShowModal(true);
   };
 
@@ -44,6 +45,11 @@ export default function Categories() {
       const response = await fetch('/api/categories', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (response.status === 401) {
+        logout();
+        navigate('/login');
+        return;
+      }
       if (!response.ok) throw new Error('Erro na resposta do servidor');
       const data = await response.json();
       setCategorias(data);
@@ -64,21 +70,18 @@ export default function Categories() {
     setSuccess('');
 
     const method = editingId ? 'PUT' : 'POST';
-    const url = editingId ? `/api/categories/${editingId}` : '/api/categories';
+    const url = editingId
+      ? `/api/categories/${editingId}`
+      : `/api/categories`;
 
     try {
       const response = await fetch(url, {
-        method: method, 
+        method,
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          prazo_alerta: formData.prazo_alerta !== '' 
-            ? parseInt(formData.prazo_alerta.toString()) 
-            : (formData.perecivel ? 3 : 30)
-        })
+        body: JSON.stringify(formData)
       });
 
       if (!response.ok) throw new Error('Erro ao salvar');
@@ -86,10 +89,58 @@ export default function Categories() {
       setSuccess(editingId ? 'Categoria atualizada!' : 'Categoria criada com sucesso!');
       setShowModal(false);
       setEditingId(null); 
-      setFormData({ nome: '', tipo: 'alimentício', perecivel: false, prazo_alerta: '' });
+      setFormData({ nome: '', tipo: 'alimentício', perecivel: false });
       fetchCategories();
     } catch {
       setError('Erro ao salvar categoria');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    
+    console.log('Tentando excluir categoria com ID:', deletingId);
+    setError('');
+    setSuccess('');
+
+    try {
+      const url = `/api/categories/${deletingId}`;
+      console.log('URL da requisição:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Status da resposta:', response.status);
+      
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('Erro ao interpretar resposta do servidor:', responseText);
+        throw new Error(`Erro do Servidor (${response.status}): A resposta não pôde ser interpretada (possível erro no proxy/rota).`);
+      }
+
+      console.log('Dados da resposta:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao excluir a categoria');
+      }
+
+      setSuccess('Categoria excluída com sucesso!');
+      setShowDeleteModal(false);
+      setDeletingId(null);
+      fetchCategories();
+    } catch (err: any) {
+      console.error('Erro ao excluir:', err);
+      setError(err.message || 'Erro ao excluir categoria');
+      setShowDeleteModal(false);
     }
   };
 
@@ -123,15 +174,15 @@ export default function Categories() {
             <p className="products-subtitle">Gerencie as classificações para o estoque</p>
           </div>
           <button 
-  className="products-btn-create" 
-  onClick={() => {
-    setEditingId(null);
-    setFormData({ nome: '', tipo: 'alimentício', perecivel: false, prazo_alerta: '' });
-    setShowModal(true);
-  }}
->
-  <Plus size={18} /> Nova Categoria
-</button>
+            className="products-btn-create" 
+            onClick={() => {
+              setEditingId(null);
+              setFormData({ nome: '', tipo: 'alimentício', perecivel: false });
+              setShowModal(true);
+            }}
+          >
+            <Plus size={18} /> Nova Categoria
+          </button>
         </div>
 
         {success && <div className="products-message products-message--success"><Check size={18} />{success}</div>}
@@ -144,7 +195,6 @@ export default function Categories() {
                 <th>Nome</th>
                 <th>Tipo</th>
                 <th>Perecível</th>
-                <th>Alerta (dias)</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -156,11 +206,20 @@ export default function Categories() {
                     <span className="products-categoria">{cat.tipo}</span>
                   </td>
                   <td className="products-table__cell">{cat.perecivel ? 'Sim' : 'Não'}</td>
-                  <td className="products-table__cell">{cat.prazo_alerta} dias</td>
                   <td className="products-table__cell">
-                     <button className="products-action-btn products-action-btn--edit"
-                     onClick={() => handleEdit(cat)}
-                     ><Edit2 size={16} /></button>
+                    <div className="products-actions">
+                      <button
+                        className="products-action-btn products-action-btn--edit"
+                        onClick={() => handleEdit(cat)}
+                      ><Edit2 size={16} /></button>
+                      <button
+                        className="products-action-btn products-action-btn--delete"
+                        onClick={() => {
+                          setDeletingId(cat.id);
+                          setShowDeleteModal(true);
+                        }}
+                      ><Trash2 size={16} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -195,15 +254,15 @@ export default function Categories() {
                     <option value="escolar">Escolar</option>
                     <option value="escritório">Escritório</option>
                     <option value="uso coletivo">Uso Coletivo</option>
+                    <option value="limpeza">Limpeza</option>
+                    <option value="higiene">Higiene</option>
+                    <option value="bebidas">Bebidas</option>
+                    <option value="medicamentos">Medicamentos</option>
+                    <option value="eletrônicos">Eletrônicos</option>
+                    <option value="ferramentas">Ferramentas</option>
+                    <option value="vestuário">Vestuário</option>
+                    <option value="outros">Outros</option>
                   </select>
-                </div>
-                <div className="products-form__group">
-                  <label>Prazo de Alerta (opcional)</label>
-                  <input 
-                    type="number" className="products-input" placeholder="Padrão: 3 p/ perecível, 30 p/ outros"
-                    value={formData.prazo_alerta}
-                    onChange={e => setFormData({...formData, prazo_alerta: e.target.value})}
-                  />
                 </div>
                 <div className="products-form__group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
                   <input 
@@ -213,8 +272,42 @@ export default function Categories() {
                   />
                   <label htmlFor="perecivel" style={{ cursor: 'pointer' }}>Esta categoria é perecível?</label>
                 </div>
-                <button type="submit" className="products-btn-submit" style={{ marginTop: '10px' }}>{editingId ? 'Salvar Alterações' : 'Criar Categoria'}</button>
+                <button type="submit" className="products-btn-submit" style={{ marginTop: '10px' }}>
+                  {editingId ? 'Salvar Alterações' : 'Criar Categoria'}
+                </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && (
+          <div className="products-modal-overlay" onClick={() => setShowDeleteModal(false)}>
+            <div className="products-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="products-modal__header">
+                <h2>Confirmar Exclusão</h2>
+                <button onClick={() => setShowDeleteModal(false)} className="products-modal__close"><X size={20} /></button>
+              </div>
+              <div className="products-form">
+                <p style={{ marginBottom: '20px', color: '#64748b' }}>
+                  Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.
+                </p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={() => setShowDeleteModal(false)} 
+                    className="products-btn-cancel"
+                    style={{ flex: 1 }}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleDelete} 
+                    className="products-btn-submit"
+                    style={{ flex: 1, background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -330,57 +423,6 @@ const productsStyles = `
     border: 1px solid rgba(244, 63, 94, 0.2);
   }
 
-  .products-filters {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .products-search {
-    flex: 1;
-    min-width: 200px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 14px;
-    background: #fff;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 12px;
-    color: #64748b;
-  }
-
-  .products-search-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: #0f172a;
-    outline: none;
-  }
-
-  .products-search-input::placeholder {
-    color: #94a3b8;
-  }
-
-  .products-filter-select {
-    padding: 10px 14px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 12px;
-    background: #fff;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: #0f172a;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-
-  .products-filter-select:focus {
-    outline: none;
-    border-color: #2563eb;
-  }
-
   .products-table-wrapper {
     background: #ffffff;
     border: 1px solid rgba(59, 130, 246, 0.15);
@@ -425,13 +467,6 @@ const productsStyles = `
     color: #0f172a;
   }
 
-  .products-codigo {
-    font-family: monospace;
-    font-weight: 600;
-    color: #2563eb;
-    font-size: 13px;
-  }
-
   .products-name {
     font-weight: 600;
     color: #0f172a;
@@ -443,64 +478,6 @@ const productsStyles = `
     background: rgba(59, 130, 246, 0.12);
     border-radius: 6px;
     color: #1e40af;
-  }
-
-  .products-amount {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .products-amount-value {
-    font-weight: 700;
-    font-family: 'Sora', sans-serif;
-    font-size: 16px;
-  }
-
-  .products-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .products-status--active {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
-  }
-
-  .products-status--active::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10b981;
-  }
-
-  .products-status--inactive {
-    background: rgba(148, 163, 184, 0.12);
-    color: #64748b;
-  }
-
-  .products-status--inactive::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #94a3b8;
-  }
-
-  .products-alert-badge {
-    display: block;
-    font-size: 10px;
-    color: #dc2626;
-    font-weight: 700;
-    margin-top: 4px;
   }
 
   .products-actions {
@@ -544,11 +521,6 @@ const productsStyles = `
     background: rgba(244, 63, 94, 0.2);
   }
 
-  .products-action-btn--view {
-    background: rgba(107, 114, 128, 0.12);
-    color: #6b7280;
-  }
-
   .products-empty {
     text-align: center;
     padding: 80px 20px;
@@ -568,41 +540,6 @@ const productsStyles = `
   .products-empty-sub {
     font-size: 13px;
     color: #94a3b8;
-  }
-
-  .products-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 24px;
-  }
-
-  .products-pagination__btn {
-    padding: 10px 16px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 10px;
-    background: #fff;
-    color: #1e40af;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
-  .products-pagination__btn:hover:not(:disabled) {
-    opacity: 0.7;
-  }
-
-  .products-pagination__btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .products-pagination__info {
-    font-size: 14px;
-    color: #64748b;
   }
 
   .products-modal-overlay {
@@ -772,14 +709,6 @@ const productsStyles = `
 
     .products-form__grid {
       grid-template-columns: 1fr;
-    }
-
-    .products-filters {
-      flex-direction: column;
-    }
-
-    .products-search {
-      min-width: auto;
     }
 
     .products-table {
