@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Mail, Lock, Package, ArrowRight, ShieldCheck, Clock3, Boxes, Eye, EyeOff } from 'lucide-react'
 
@@ -43,7 +43,7 @@ export default function Login() {
           </div>
 
           <h1 className="login-hero__title">
-            Escola Yolanda Queiroz 
+            Escola Yolanda Queiroz
           </h1>
 
           <p className="login-hero__description">
@@ -163,6 +163,7 @@ export default function Login() {
 
               <div className="login-card__footer">
                 <span className="login-card__footer-school">Escola Yolanda Queiroz</span>
+                <Link to="/esqueci-senha" className="login-card__forgot-link">Esqueceu sua senha?</Link>
               </div>
             </div>
           </div>
@@ -612,6 +613,20 @@ export default function Login() {
           color: #94a3b8;
           letter-spacing: 0.03em;
           font-weight: 500;
+        }
+
+        .login-card__forgot-link {
+          display: block;
+          margin-top: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #3b82f6;
+          text-decoration: none;
+          transition: color 0.15s;
+        }
+
+        .login-card__forgot-link:hover {
+          color: #1d4ed8;
         }
 
         @media (max-width: 1023px) {

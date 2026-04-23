@@ -9,6 +9,8 @@ import Categories from './pages/Categories'
 import Fornecedores from './pages/Fornecedores'
 import Movimentacoes from './pages/Movimentacoes'
 import Profile from './pages/Profile'
+import EsqueciSenha from './pages/EsqueciSenha'
+import RedefinirSenha from './pages/RedefinirSenha'
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/recuperar-senha" element={<RedefinirSenha />} />
           <Route
             path="/dashboard"
             element={
@@ -40,7 +44,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/categorias"
             element={
@@ -76,7 +80,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-              
+
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
