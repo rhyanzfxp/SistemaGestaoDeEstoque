@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Categories from './pages/Categories'
 import Fornecedores from './pages/Fornecedores'
 import Movimentacoes from './pages/Movimentacoes'
+import Profile from './pages/Profile'
 
 function App() {
   return (
@@ -63,6 +64,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
                 <Movimentacoes />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Truck, Tags } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -322,7 +322,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="sb-footer">
-          <div className="sb-user">
+          <Link to="/profile" className="sb-user">
             <div className="sb-user__avatar">{initials}</div>
             <div className="sb-user__info">
               <p className="sb-user__name">{user?.nome}</p>
@@ -334,7 +334,7 @@ export default function Sidebar() {
             >
               {user?.perfil}
             </span>
-          </div>
+          </Link>
 
           <button className="sb-logout" onClick={logout}>
             <LogOut size={16} strokeWidth={2} />
