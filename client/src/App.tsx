@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Categories from './pages/Categories'
 import Fornecedores from './pages/Fornecedores'
 import Movimentacoes from './pages/Movimentacoes'
+import Perfil from './pages/Perfil';
 
 function App() {
   return (
@@ -39,6 +40,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+           path="/perfil"
+           element={
+             <ProtectedRoute>
+               <Perfil />
+              </ProtectedRoute>
+            }
+         />
           
           <Route
             path="/categorias"

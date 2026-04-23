@@ -321,6 +321,15 @@ export default function Sidebar() {
           )}
         </nav>
 
+        <NavLink
+  to="/perfil"
+  className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
+>
+  <Users size={18} className="sb-link__icon" strokeWidth={2} />
+  <span>Meu Perfil</span>
+  <ChevronRight size={14} className="sb-link__chevron" />
+</NavLink>
+
         <div className="sb-footer">
           <div className="sb-user">
             <div className="sb-user__avatar">{initials}</div>
