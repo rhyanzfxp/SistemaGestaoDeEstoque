@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, type FormEvent } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Mail, Lock, Package, ArrowRight, ShieldCheck, Clock3, Boxes, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Package, ArrowRight, ShieldCheck, Clock3, Boxes, Eye, EyeOff, CheckCircle, X } from 'lucide-react'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -12,6 +12,17 @@ export default function Login() {
 
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const [toastMessage, setToastMessage] = useState(location.state?.mensagem || '')
+
+  useEffect(() => {
+    if (toastMessage) {
+      window.history.replaceState({}, document.title)
+      const timer = setTimeout(() => setToastMessage(''), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [toastMessage])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -34,6 +45,16 @@ export default function Login() {
       <div className="login-bg-orb login-bg-orb--1" />
       <div className="login-bg-orb login-bg-orb--2" />
       <div className="login-bg-orb login-bg-orb--3" />
+
+      {toastMessage && (
+        <div className="login-toast">
+          <CheckCircle size={20} className="login-toast__icon" />
+          <span className="login-toast__text">{toastMessage}</span>
+          <button onClick={() => setToastMessage('')} className="login-toast__close" aria-label="Fechar">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="login-wrapper">
         <section className="login-hero">
@@ -632,6 +653,62 @@ export default function Login() {
         @media (max-width: 1023px) {
           .login-wrapper {
             justify-items: center;
+          }
+        }
+
+        .login-toast {
+          position: fixed;
+          top: 24px;
+          right: 24px;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 20px;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.2);
+          border-left: 4px solid #10b981;
+          animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-toast__icon {
+          color: #10b981;
+        }
+
+        .login-toast__text {
+          font-size: 14.5px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .login-toast__close {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          border-radius: 6px;
+          transition: background 0.15s;
+          margin-left: 8px;
+        }
+
+        .login-toast__close:hover {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        @keyframes toast-slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
           }
         }
       `}</style>

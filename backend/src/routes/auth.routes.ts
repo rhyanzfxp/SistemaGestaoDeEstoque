@@ -9,7 +9,8 @@ const router = Router()
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { password } = req.body
+    const email = req.body.email?.trim()
 
     const { data: user, error } = await supabase
       .from('usuarios')

@@ -218,7 +218,7 @@ export default function Profile() {
             <div className="profile-column profile-column--right">
               <div className="profile-card" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.15)' }}>
                 <div className="profile-card__header">
-                  <h2 className="profile-card__title">Minhas Atividades Recentes</h2>
+                  <h2 className="profile-card__title">Minhas Movimentações Recentes</h2>
                   <button
                     className="profile-refresh-btn"
                     onClick={fetchActivities}
