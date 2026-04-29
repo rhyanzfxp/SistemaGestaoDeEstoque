@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
+import { getIO } from '../utils/socket'
 
 const router = Router()
 
@@ -251,6 +252,8 @@ router.post('/entrada', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (r
       throw updateError
     }
 
+    getIO().emit('estoque_atualizado')
+
     res.status(201).json({ 
       message: 'Entrada registrada com sucesso',
       movimentacao 
@@ -326,6 +329,8 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       await supabase.from('movimentacoes').delete().eq('id', movimentacao.id)
       throw updateError
     }
+
+    getIO().emit('estoque_atualizado')
 
     res.status(201).json({ 
       message: 'Saída registrada com sucesso',
@@ -424,6 +429,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       throw updateEstoqueError
     }
 
+    getIO().emit('estoque_atualizado')
+
     res.json({ 
       message: 'Movimentação atualizada com sucesso',
       estoque_atualizado: novoEstoque
@@ -465,6 +472,8 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 
     console.log('Movimentação excluída com sucesso. Estoque mantido.')
 
+    getIO().emit('estoque_atualizado')
+
     res.json({ 
       message: 'Movimentação excluída com sucesso. Estoque mantido.',
       estoque_mantido: true
@@ -483,6 +492,8 @@ router.delete('/', authMiddleware, requireRole('ADMIN'), async (req: Request, re
       .neq('id', '00000000-0000-0000-0000-000000000000')
 
     if (deleteError) throw deleteError
+
+    getIO().emit('estoque_atualizado')
 
     res.json({ 
       message: 'Histórico de movimentações limpo com sucesso. Os estoques atuais foram mantidos.'

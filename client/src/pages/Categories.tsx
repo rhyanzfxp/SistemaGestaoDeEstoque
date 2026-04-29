@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, X, AlertTriangle, Check, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useRealtime } from '../hooks/useRealtime';
 
 type CategoriaTipo = 'alimentício' | 'escolar' | 'escritório' | 'uso coletivo' | 'limpeza' | 'higiene' | 'bebidas' | 'medicamentos' | 'eletrônicos' | 'ferramentas' | 'vestuário' | 'outros';
 
@@ -59,6 +60,10 @@ export default function Categories() {
       setIsLoading(false);
     }
   };
+
+  useRealtime('estoque_atualizado', () => {
+    if (token) fetchCategories();
+  });
 
   useEffect(() => { 
     if (token) fetchCategories(); 

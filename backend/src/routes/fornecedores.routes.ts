@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
+import { getIO } from '../utils/socket'
 
 const router = Router()
 
@@ -116,6 +117,8 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 
     if (error) throw error
 
+    getIO().emit('estoque_atualizado')
+
     res.status(201).json(novoFornecedor)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar fornecedor' })
@@ -160,6 +163,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       return res.status(404).json({ error: 'Fornecedor não encontrado' })
     }
 
+    getIO().emit('estoque_atualizado')
+
     res.json(fornecedor)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar fornecedor' })
@@ -191,6 +196,8 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       .eq('id', id)
 
     if (error) throw error
+
+    getIO().emit('estoque_atualizado')
 
     res.json({
       message: 'Fornecedor excluído com sucesso'

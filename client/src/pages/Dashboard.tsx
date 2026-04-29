@@ -5,6 +5,7 @@ import {
   ArrowUpRight, ArrowDownRight, Clock, RefreshCw, Boxes
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useRealtime } from '../hooks/useRealtime'
 
 interface DashboardData {
   totalProdutos: number
@@ -20,13 +21,6 @@ interface DashboardData {
     usuario: string
     data: string
   }>
-}
-
-
-type Perfil = 'ADMIN' | 'GESTAO'
-
-function canWrite(perfil?: Perfil) {
-  return perfil === 'ADMIN' || perfil === 'GESTAO'
 }
 
 
@@ -91,6 +85,8 @@ export default function Dashboard() {
       setIsLoading(false)
     }
   }
+
+  useRealtime('estoque_atualizado', fetchDashboard)
 
 
   useEffect(() => {

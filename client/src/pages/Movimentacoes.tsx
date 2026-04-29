@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { ArrowUpRight, ArrowDownRight, Plus, X, Search, Filter, Calendar, Trash2, Edit2 } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
+import { useRealtime } from '../hooks/useRealtime'
 
 interface Movimentacao {
   id: string
@@ -45,7 +46,7 @@ export default function Movimentacoes() {
   const { token } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('entrada')
   const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
@@ -147,6 +148,11 @@ export default function Movimentacoes() {
       setLoading(false)
     }
   }
+
+  useRealtime('estoque_atualizado', () => {
+    fetchData()
+    fetchProdutos()
+  })
 
   const handleOpenModal = () => {
     setFormData({
