@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
+import { getIO } from '../utils/socket'
 
 const router = Router()
 
@@ -125,6 +126,8 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 
     if (error) throw error
 
+    getIO().emit('estoque_atualizado')
+
     res.status(201).json(novoProduct)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar produto' })
@@ -171,6 +174,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
 
+    getIO().emit('estoque_atualizado')
+
     res.json(produto)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar produto' })
@@ -201,6 +206,8 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 
     if (error) throw error
 
+    getIO().emit('estoque_atualizado')
+
     res.json({
       message: 'Produto excluído com sucesso'
     })
@@ -224,6 +231,8 @@ router.patch('/:id/inativar', authMiddleware, requireRole('ADMIN', 'GESTAO'), as
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' })
     }
+
+    getIO().emit('estoque_atualizado')
 
     res.json({
       message: 'Produto inativado com sucesso',

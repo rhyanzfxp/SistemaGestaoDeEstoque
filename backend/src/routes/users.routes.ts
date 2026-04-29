@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
+import { getIO } from '../utils/socket'
 
 const router = Router()
 
@@ -58,6 +59,8 @@ router.post('/', authMiddleware, requireRole('ADMIN'), async (req: Request, res:
 
     if (error) throw error
 
+    getIO().emit('estoque_atualizado')
+
     res.status(201).json(newUser)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar usuário' })
@@ -104,6 +107,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN'), async (req: Request, re
       return res.status(404).json({ error: 'Usuário não encontrado' })
     }
 
+    getIO().emit('estoque_atualizado')
+
     res.json(updatedUser)
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar usuário' })
@@ -125,6 +130,8 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN'), async (req: Request,
     if (!deletedUser) {
       return res.status(404).json({ error: 'Usuário não encontrado' })
     }
+
+    getIO().emit('estoque_atualizado')
 
     res.json({
       message: 'Usuário deletado com sucesso',

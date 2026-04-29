@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Package, Plus, Edit2, Eye, AlertTriangle, X, Check, Trash2, RefreshCw, Search } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
+import { useRealtime } from '../hooks/useRealtime'
 
 interface Produto {
   id: string
@@ -144,6 +145,10 @@ export default function Products() {
       setIsLoading(false)
     }
   }
+
+  useRealtime('estoque_atualizado', () => {
+    fetchProducts(currentPage)
+  })
 
   useEffect(() => {
     setIsLoading(true)

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Users as UsersIcon, Plus, Edit2, Trash2, X, Check, AlertCircle, RefreshCw } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
+import { useRealtime } from '../hooks/useRealtime'
 
 interface User {
   id: string
@@ -53,6 +54,10 @@ export default function Users() {
       setIsLoading(false)
     }
   }
+
+  useRealtime('estoque_atualizado', () => {
+    if (isAdmin) fetchUsers();
+  })
 
   useEffect(() => {
     if (isAdmin) {

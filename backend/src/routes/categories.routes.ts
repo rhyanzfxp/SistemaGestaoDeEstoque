@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../config/supabase';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware'; 
+import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { getIO } from '../utils/socket';
 
 const router = Router();
 
@@ -39,6 +40,8 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, res
 
     if (error) throw error
 
+    getIO().emit('estoque_atualizado')
+
     res.status(201).json(novaCategoria);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar categoria' });
@@ -66,6 +69,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req, r
     if (!categoriaAtualizada) {
       return res.status(404).json({ error: 'Categoria não encontrada' });
     }
+
+    getIO().emit('estoque_atualizado')
 
     res.json(categoriaAtualizada);
   } catch (error) {
@@ -100,6 +105,7 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       throw error;
     }
 
+    getIO().emit('estoque_atualizado')
     console.log('Categoria excluída com sucesso');
     res.json({ message: 'Categoria excluída com sucesso' });
   } catch (error: any) {

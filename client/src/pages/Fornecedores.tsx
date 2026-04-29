@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import Toast from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
+import { useRealtime } from '../hooks/useRealtime'
 
 interface Fornecedor {
   id: string
@@ -62,6 +63,8 @@ export default function Fornecedores() {
       setLoading(false)
     }
   }
+
+  useRealtime('estoque_atualizado', fetchFornecedores)
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
@@ -190,7 +193,7 @@ export default function Fornecedores() {
     )
   }
 
-  const styles: Record<string, React.CSSProperties> = {
+  const styles: any = {
     page: {
       padding: '32px 32px 48px',
       fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
@@ -350,7 +353,7 @@ export default function Fornecedores() {
       opacity: visible ? 1 : 0,
       transition: 'opacity 0.15s',
     } as React.CSSProperties),
-    actionBtn: (color: string, hoverBg: string) => ({
+    actionBtn: (color: string) => ({
       width: 30,
       height: 30,
       borderRadius: 8,
@@ -604,7 +607,7 @@ export default function Fornecedores() {
 
       {/* Empty state */}
       {fornecedores.length === 0 ? (
-        <div style={styles.emptyWrap as React.CSSProperties}>
+        <div style={styles.emptyWrap}>
           <div style={styles.emptyIcon}>
             <svg width="24" height="24" fill="none" stroke="#3B5BDB" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -649,7 +652,7 @@ export default function Fornecedores() {
                       <button
                         className="action-edit"
                         onClick={() => handleOpenModal(fornecedor)}
-                        style={styles.actionBtn('#3B5BDB', '#EEF2FF')}
+                        style={styles.actionBtn('#3B5BDB')}
                         title="Editar"
                       >
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -659,7 +662,7 @@ export default function Fornecedores() {
                       <button
                         className="action-del"
                         onClick={() => setConfirmDelete(fornecedor.id)}
-                        style={styles.actionBtn('#EF4444', '#FEF2F2')}
+                        style={styles.actionBtn('#EF4444')}
                         title="Excluir"
                       >
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -732,7 +735,7 @@ export default function Fornecedores() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div style={styles.modalBody as React.CSSProperties}>
+              <div style={styles.modalBody}>
                 {[
                   { label: 'Nome', name: 'nome', placeholder: 'Razão social ou nome', required: true, type: 'text' },
                   { label: 'CNPJ', name: 'cnpj', placeholder: '00.000.000/0000-00', maxLength: 18, type: 'text' },
