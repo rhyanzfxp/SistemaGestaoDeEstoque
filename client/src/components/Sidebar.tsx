@@ -1,9 +1,11 @@
 import { NavLink, Link } from 'react-router-dom'
-import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Truck, Tags } from 'lucide-react'
+import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Tags, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
 
   const initials = user?.nome
     ? user.nome.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -11,8 +13,8 @@ export default function Sidebar() {
 
   const profileColor =
     user?.perfil === 'ADMIN'
-      ? { bg: 'rgba(59,130,246,0.15)', text: '#1e40af', label: 'Administrador' }
-      : { bg: 'rgba(16,185,129,0.15)', text: '#059669', label: 'Gestão' }
+      ? { bg: 'rgba(59,130,246,0.15)', text: isDark ? '#818cf8' : '#1e40af' }
+      : { bg: 'rgba(16,185,129,0.15)', text: isDark ? '#34d399' : '#059669' }
 
   return (
     <>
@@ -25,12 +27,12 @@ export default function Sidebar() {
           height: 100vh;
           display: flex;
           flex-direction: column;
-          background: #ffffff;
-          border-right: 1px solid rgba(59,130,246,0.15);
+          background: var(--bg-sidebar);
+          border-right: 1px solid var(--border-sidebar);
           position: relative;
           overflow: hidden;
           font-family: 'DM Sans', sans-serif;
-          box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+          box-shadow: var(--shadow-sidebar);
         }
 
         .sb-root::before {
@@ -39,7 +41,7 @@ export default function Sidebar() {
           top: -80px; left: -80px;
           width: 300px; height: 300px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%);
+          background: radial-gradient(circle, var(--orb-1) 0%, transparent 70%);
           pointer-events: none;
         }
         .sb-root::after {
@@ -48,13 +50,13 @@ export default function Sidebar() {
           bottom: -60px; right: -60px;
           width: 240px; height: 240px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 70%);
+          background: radial-gradient(circle, var(--orb-2) 0%, transparent 70%);
           pointer-events: none;
         }
 
         .sb-header {
           padding: 24px 20px 20px;
-          border-bottom: 1px solid rgba(59,130,246,0.12);
+          border-bottom: 1px solid var(--border-sidebar);
           position: relative;
           z-index: 1;
         }
@@ -79,14 +81,14 @@ export default function Sidebar() {
           font-family: 'Sora', sans-serif;
           font-size: 14.5px;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--text-primary);
           line-height: 1.2;
           letter-spacing: -0.01em;
         }
 
         .sb-school {
           font-size: 11.5px;
-          color: #64748b;
+          color: var(--text-secondary);
           font-weight: 500;
           padding-left: 2px;
           letter-spacing: 0.02em;
@@ -106,7 +108,7 @@ export default function Sidebar() {
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.1em;
-          color: #94a3b8;
+          color: var(--text-muted);
           text-transform: uppercase;
           padding: 8px 8px 6px;
           margin-bottom: 2px;
@@ -120,7 +122,7 @@ export default function Sidebar() {
           border-radius: 12px;
           font-size: 14px;
           font-weight: 500;
-          color: #64748b;
+          color: var(--text-secondary);
           text-decoration: none;
           transition: color 0.18s, background 0.18s;
           position: relative;
@@ -128,13 +130,13 @@ export default function Sidebar() {
         }
 
         .sb-link:hover {
-          color: #0f172a;
-          background: rgba(59,130,246,0.08);
+          color: var(--text-primary);
+          background: var(--bg-hover);
         }
 
         .sb-link--active {
-          color: #1e40af !important;
-          background: rgba(59,130,246,0.12) !important;
+          color: var(--text-link-active) !important;
+          background: var(--bg-active) !important;
         }
 
         .sb-link--active::before {
@@ -143,7 +145,7 @@ export default function Sidebar() {
           left: 0; top: 20%; bottom: 20%;
           width: 3px;
           border-radius: 0 4px 4px 0;
-          background: linear-gradient(180deg, #3b82f6, #2563eb);
+          background: linear-gradient(180deg, var(--accent-primary), var(--accent-hover));
         }
 
         .sb-link__icon {
@@ -162,7 +164,7 @@ export default function Sidebar() {
           opacity: 0;
           transform: translateX(-4px);
           transition: opacity 0.18s, transform 0.18s;
-          color: #94a3b8;
+          color: var(--text-muted);
         }
 
         .sb-link:hover .sb-link__chevron,
@@ -171,9 +173,70 @@ export default function Sidebar() {
           transform: translateX(0);
         }
 
+        /* ── Theme toggle ── */
+        .sb-theme-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 11px 14px;
+          margin: 0 0 6px 0;
+          border-radius: 12px;
+          border: 1px solid var(--border-sidebar);
+          background: var(--bg-badge);
+          cursor: pointer;
+          transition: background 0.18s, border-color 0.18s;
+          width: 100%;
+        }
+
+        .sb-theme-toggle:hover {
+          background: var(--bg-hover);
+        }
+
+        .sb-theme-toggle__label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          flex: 1;
+        }
+
+        .sb-theme-toggle__switch {
+          width: 40px;
+          height: 22px;
+          border-radius: 999px;
+          background: var(--toggle-bg);
+          position: relative;
+          transition: background 0.25s;
+          flex-shrink: 0;
+          margin-left: 12px;
+        }
+
+        .sb-theme-toggle__switch--on {
+          background: var(--accent-primary);
+        }
+
+        .sb-theme-toggle__knob {
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #ffffff;
+          transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+
+        .sb-theme-toggle__knob--on {
+          transform: translateX(18px);
+        }
+
+        /* ── Footer ── */
         .sb-footer {
           padding: 12px;
-          border-top: 1px solid rgba(59,130,246,0.12);
+          border-top: 1px solid var(--border-sidebar);
           position: relative;
           z-index: 1;
         }
@@ -184,22 +247,34 @@ export default function Sidebar() {
           gap: 11px;
           padding: 10px 12px;
           border-radius: 14px;
-          background: rgba(59,130,246,0.06);
-          border: 1px solid rgba(59,130,246,0.12);
+          background: var(--bg-badge);
+          border: 1px solid var(--border-sidebar);
           margin-bottom: 6px;
+          text-decoration: none;
         }
 
         .sb-user__avatar {
-          width: 36px; height: 36px;
-          border-radius: 10px;
+          width: 38px; height: 38px;
+          border-radius: 50%;
           background: linear-gradient(135deg, #2563eb, #1d4ed8);
           display: flex; align-items: center; justify-content: center;
           font-family: 'Sora', sans-serif;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           color: #fff;
           flex-shrink: 0;
           letter-spacing: 0.02em;
+          overflow: hidden;
+          border: 2px solid rgba(99,102,241,0.25);
+          box-shadow: 0 0 0 2px var(--bg-sidebar), 0 2px 8px rgba(37,99,235,0.18);
+        }
+
+        .sb-user__avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
         }
 
         .sb-user__info {
@@ -210,7 +285,7 @@ export default function Sidebar() {
         .sb-user__name {
           font-size: 13px;
           font-weight: 600;
-          color: #0f172a;
+          color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -219,7 +294,7 @@ export default function Sidebar() {
 
         .sb-user__email {
           font-size: 11px;
-          color: #64748b;
+          color: var(--text-secondary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -273,47 +348,26 @@ export default function Sidebar() {
         <nav className="sb-nav">
           <p className="sb-nav__label">Menu</p>
 
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-          >
+          <NavLink to="/dashboard" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
             <LayoutDashboard size={18} className="sb-link__icon" strokeWidth={2} />
             <span>Dashboard</span>
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 
-          <NavLink
-            to="/produtos"
-            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-          >
+          <NavLink to="/produtos" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
             <Package size={18} className="sb-link__icon" strokeWidth={2} />
             <span>Produtos</span>
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 
-          <NavLink
-            to="/categorias"
-            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-          >
+          <NavLink to="/categorias" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
             <Tags size={18} className="sb-link__icon" strokeWidth={2} />
             <span>Categorias</span>
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 
-          <NavLink
-            to="/fornecedores"
-            className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-          >
-            <Truck size={18} className="sb-link__icon" strokeWidth={2} />
-            <span>Fornecedores</span>
-            <ChevronRight size={14} className="sb-link__chevron" />
-          </NavLink>
-
           {user?.perfil === 'ADMIN' && (
-            <NavLink
-              to="/usuarios"
-              className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}
-            >
+            <NavLink to="/usuarios" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
               <Users size={18} className="sb-link__icon" strokeWidth={2} />
               <span>Usuários</span>
               <ChevronRight size={14} className="sb-link__chevron" />
@@ -322,16 +376,32 @@ export default function Sidebar() {
         </nav>
 
         <div className="sb-footer">
+          {/* Theme toggle */}
+          <button className="sb-theme-toggle" onClick={toggleTheme} title={isDark ? 'Mudar para claro' : 'Mudar para escuro'}>
+            <span className="sb-theme-toggle__label">
+              {isDark
+                ? <Moon size={15} strokeWidth={2} />
+                : <Sun size={15} strokeWidth={2} />
+              }
+              {isDark ? 'Modo escuro' : 'Modo claro'}
+            </span>
+            <div className={`sb-theme-toggle__switch ${isDark ? 'sb-theme-toggle__switch--on' : ''}`}>
+              <div className={`sb-theme-toggle__knob ${isDark ? 'sb-theme-toggle__knob--on' : ''}`} />
+            </div>
+          </button>
+
           <Link to="/profile" className="sb-user">
-            <div className="sb-user__avatar">{initials}</div>
+            <div className="sb-user__avatar">
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : initials
+              }
+            </div>
             <div className="sb-user__info">
               <p className="sb-user__name">{user?.nome}</p>
               <p className="sb-user__email">{user?.email}</p>
             </div>
-            <span
-              className="sb-user__badge"
-              style={{ background: profileColor.bg, color: profileColor.text }}
-            >
+            <span className="sb-user__badge" style={{ background: profileColor.bg, color: profileColor.text }}>
               {user?.perfil}
             </span>
           </Link>

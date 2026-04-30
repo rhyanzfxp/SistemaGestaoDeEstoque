@@ -19,20 +19,6 @@ router.get('/categorias', authMiddleware, async (req: Request, res: Response) =>
   }
 })
 
-router.get('/fornecedores', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const { data: fornecedores, error } = await supabase
-      .from('fornecedores')
-      .select('*')
-      .order('nome')
-
-    if (error) throw error
-    res.json(fornecedores)
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar fornecedores' })
-  }
-})
-
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { search, categoria_id, status, page = '1', limit = '10' } = req.query
@@ -41,11 +27,10 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       .from('produtos')
       .select(`
         *,
-        categorias:categoria_id (nome),
-        fornecedores:fornecedor_id (nome)
+        categorias:categoria_id (nome)
       `, { count: 'exact' })
 
-    
+
     if (status === 'ativo') {
       query = query.eq('ativo', true)
     } else if (status === 'inativo') {
@@ -73,7 +58,6 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     const enrichedProducts = produtos?.map(p => ({
       ...p,
       categoria_nome: (p.categorias as any)?.nome || '',
-      fornecedor_nome: (p.fornecedores as any)?.nome || '',
       estoque_status: p.quantidade_atual <= p.estoque_minimo ? 'crítico' : 'normal'
     })) || []
 
@@ -93,9 +77,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
-    const { codigo, nome, data_validade, categoria_id, fornecedor_id, quantidade_atual, estoque_minimo } = req.body
+    const { codigo, nome, data_validade, categoria_id, quantidade_atual, estoque_minimo } = req.body
 
-    if (!codigo || !nome || !categoria_id || !fornecedor_id || quantidade_atual === undefined || estoque_minimo === undefined) {
+    if (!codigo || !nome || !categoria_id || quantidade_atual === undefined || estoque_minimo === undefined) {
       return res.status(400).json({ error: 'Todos os campos são obrigatórios' })
     }
 
@@ -116,7 +100,6 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
         nome,
         data_validade: data_validade || null,
         categoria_id,
-        fornecedor_id,
         quantidade_atual: parseInt(quantidade_atual),
         estoque_minimo: parseInt(estoque_minimo),
         ativo: true
@@ -137,7 +120,7 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { codigo, nome, data_validade, categoria_id, fornecedor_id, quantidade_atual, estoque_minimo, ativo } = req.body
+    const { codigo, nome, data_validade, categoria_id, quantidade_atual, estoque_minimo, ativo } = req.body
 
     if (codigo) {
       const { data: existingProduct } = await supabase
@@ -157,7 +140,6 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
     if (nome) updateData.nome = nome
     if (data_validade !== undefined) updateData.data_validade = data_validade || null
     if (categoria_id) updateData.categoria_id = categoria_id
-    if (fornecedor_id) updateData.fornecedor_id = fornecedor_id
     if (quantidade_atual !== undefined) updateData.quantidade_atual = parseInt(quantidade_atual)
     if (estoque_minimo !== undefined) updateData.estoque_minimo = parseInt(estoque_minimo)
     if (ativo !== undefined) updateData.ativo = ativo
@@ -193,7 +175,7 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
       .limit(1)
 
     if (movimentacoes && movimentacoes.length > 0) {
-      return res.status(422).json({ 
+      return res.status(422).json({
         error: 'Este produto possui movimentações registradas e não pode ser excluído. Utilize a opção de inativar o produto.',
         canInactivate: true
       })
@@ -251,8 +233,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       .from('produtos')
       .select(`
         *,
-        categorias:categoria_id (nome),
-        fornecedores:fornecedor_id (nome)
+        categorias:categoria_id (nome)
       `)
       .eq('id', id)
       .single()
@@ -264,8 +245,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       ...produto,
-      categoria_nome: (produto.categorias as any)?.nome || '',
-      fornecedor_nome: (produto.fornecedores as any)?.nome || ''
+      categoria_nome: (produto.categorias as any)?.nome || ''
     })
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar produto' })

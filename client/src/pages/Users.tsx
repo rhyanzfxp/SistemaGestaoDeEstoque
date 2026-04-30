@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Users as UsersIcon, Plus, Edit2, Trash2, X, Check, AlertCircle, RefreshCw } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 import { useRealtime } from '../hooks/useRealtime'
+import { useSubmitting } from '../hooks/useSubmitting'
 
 interface User {
   id: string
@@ -38,6 +39,7 @@ export default function Users() {
   })
 
   const isAdmin = user?.perfil === 'ADMIN'
+  const wrap = useSubmitting()
 
   const fetchUsers = async () => {
     try {
@@ -67,43 +69,45 @@ export default function Users() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    wrap(async () => {
+      setError('')
+      setSuccess('')
 
-    try {
-      if (!formData.nome || !formData.email || (!editingId && !formData.password)) {
-        setError('Preencha todos os campos obrigatórios')
-        return
+      try {
+        if (!formData.nome || !formData.email || (!editingId && !formData.password)) {
+          setError('Preencha todos os campos obrigatórios')
+          return
+        }
+
+        const method = editingId ? 'PUT' : 'POST'
+        const url = editingId ? `/api/users/${editingId}` : '/api/users'
+        const body = editingId
+          ? { nome: formData.nome, email: formData.email, perfil: formData.perfil }
+          : formData
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Erro na operação')
+        }
+
+        setSuccess(editingId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!')
+        setFormData({ nome: '', email: '', password: '', perfil: 'GESTAO' })
+        setEditingId(null)
+        setShowModal(false)
+        fetchUsers()
+      } catch (err: any) {
+        setError(err.message || 'Erro ao salvar usuário')
       }
-
-      const method = editingId ? 'PUT' : 'POST'
-      const url = editingId ? `/api/users/${editingId}` : '/api/users'
-      const body = editingId
-        ? { nome: formData.nome, email: formData.email, perfil: formData.perfil }
-        : formData
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro na operação')
-      }
-
-      setSuccess(editingId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!')
-      setFormData({ nome: '', email: '', password: '', perfil: 'GESTAO' })
-      setEditingId(null)
-      setShowModal(false)
-      fetchUsers()
-    } catch (err: any) {
-      setError(err.message || 'Erro ao salvar usuário')
-    }
+    })
   }
 
   const handleEdit = (u: User) => {
@@ -121,22 +125,23 @@ export default function Users() {
 
   const handleDelete = async () => {
     if (!userToDelete) return
+    wrap(async () => {
+      try {
+        const response = await fetch(`/api/users/${userToDelete}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
-    try {
-      const response = await fetch(`/api/users/${userToDelete}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
+        if (!response.ok) throw new Error('Erro ao deletar')
 
-      if (!response.ok) throw new Error('Erro ao deletar')
-
-      setSuccess('Usuário deletado com sucesso!')
-      fetchUsers()
-    } catch (err: any) {
-      setError(err.message || 'Erro ao deletar usuário')
-    } finally {
-      setUserToDelete(null)
-    }
+        setSuccess('Usuário deletado com sucesso!')
+        fetchUsers()
+      } catch (err: any) {
+        setError(err.message || 'Erro ao deletar usuário')
+      } finally {
+        setUserToDelete(null)
+      }
+    })
   }
 
   const closeModal = () => {
