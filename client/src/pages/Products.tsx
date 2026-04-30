@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Package, Plus, Edit2, Eye, AlertTriangle, X, Check, Trash2, RefreshCw, Search } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 import { useRealtime } from '../hooks/useRealtime'
+import { useSubmitting } from '../hooks/useSubmitting'
 
 interface Produto {
   id: string
@@ -11,8 +12,6 @@ interface Produto {
   data_validade?: string
   categoria_id: string
   categoria_nome?: string
-  fornecedor_id: string
-  fornecedor_nome?: string
   quantidade_atual: number
   estoque_minimo: number
   ativo: boolean
@@ -26,19 +25,11 @@ interface Categoria {
   descricao?: string
 }
 
-interface Fornecedor {
-  id: string
-  nome: string
-  email?: string
-  telefone?: string
-}
-
 interface FormData {
   codigo: string
   nome: string
   data_validade?: string
   categoria_id: string
-  fornecedor_id: string
   quantidade_atual: number | string
   estoque_minimo: number | string
   ativo?: boolean
@@ -55,7 +46,6 @@ export default function Products() {
   const { token, user } = useAuth()
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -75,7 +65,6 @@ export default function Products() {
     nome: '',
     data_validade: '',
     categoria_id: '',
-    fornecedor_id: '',
     quantidade_atual: '',
     estoque_minimo: '',
     ativo: true
@@ -90,26 +79,17 @@ export default function Products() {
 
   const isAdmin = user?.perfil === 'ADMIN' || user?.perfil === 'GESTAO'
   const canCreate = isAdmin
+  const wrap = useSubmitting()
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [categoriasRes, fornecedoresRes] = await Promise.all([
-          fetch('/api/produtos/categorias', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/produtos/fornecedores', { headers: { Authorization: `Bearer ${token}` } })
-        ])
-
+        const categoriasRes = await fetch('/api/produtos/categorias', { headers: { Authorization: `Bearer ${token}` } })
         const categoriasData = await categoriasRes.json()
-        const fornecedoresData = await fornecedoresRes.json()
-
         setCategorias(categoriasData)
-        setFornecedores(fornecedoresData)
 
         if (categoriasData.length > 0) {
           setFormData(prev => ({ ...prev, categoria_id: categoriasData[0].id }))
-        }
-        if (fornecedoresData.length > 0) {
-          setFormData(prev => ({ ...prev, fornecedor_id: fornecedoresData[0].id }))
         }
       } catch (err) {
         console.error('Erro ao carregar dados iniciais:', err)
@@ -160,55 +140,56 @@ export default function Products() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    wrap(async () => {
+      setError('')
+      setSuccess('')
 
-    try {
-      if (!formData.codigo || !formData.nome || !formData.categoria_id || !formData.fornecedor_id || formData.quantidade_atual === '' || formData.estoque_minimo === '') {
-        setError('Preencha todos os campos obrigatórios')
-        return
-      }
+      try {
+        if (!formData.codigo || !formData.nome || !formData.categoria_id || formData.quantidade_atual === '' || formData.estoque_minimo === '') {
+          setError('Preencha todos os campos obrigatórios')
+          return
+        }
 
-      const method = editingId ? 'PUT' : 'POST'
-      const url = editingId ? `/api/produtos/${editingId}` : '/api/produtos'
+        const method = editingId ? 'PUT' : 'POST'
+        const url = editingId ? `/api/produtos/${editingId}` : '/api/produtos'
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          quantidade_atual: parseInt(formData.quantidade_atual.toString()),
-          estoque_minimo: parseInt(formData.estoque_minimo.toString()),
-          ativo: formData.ativo ?? true
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            ...formData,
+            quantidade_atual: parseInt(formData.quantidade_atual.toString()),
+            estoque_minimo: parseInt(formData.estoque_minimo.toString()),
+            ativo: formData.ativo ?? true
+          })
         })
-      })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro na operação')
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Erro na operação')
+        }
+
+        setSuccess(editingId ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!')
+        resetForm()
+        setShowModal(false)
+        fetchProducts(currentPage)
+      } catch (err: any) {
+        setError(err.message || 'Erro ao salvar produto')
       }
-
-      setSuccess(editingId ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!')
-      resetForm()
-      setShowModal(false)
-      fetchProducts(currentPage)
-    } catch (err: any) {
-      setError(err.message || 'Erro ao salvar produto')
-    }
+    })
   }
 
   const handleEdit = (p: Produto) => {
     const dataFormatada = p.data_validade ? p.data_validade.split('T')[0] : ''
-    
+
     setFormData({
       codigo: p.codigo,
       nome: p.nome,
       data_validade: dataFormatada,
       categoria_id: p.categoria_id,
-      fornecedor_id: p.fornecedor_id,
       quantidade_atual: p.quantidade_atual,
       estoque_minimo: p.estoque_minimo,
       ativo: p.ativo
@@ -221,54 +202,56 @@ export default function Products() {
 
   const handleExcluir = async () => {
     if (!productToDelete) return
+    wrap(async () => {
+      try {
+        const response = await fetch(`/api/produtos/${productToDelete}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
-    try {
-      const response = await fetch(`/api/produtos/${productToDelete}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
+        const data = await response.json()
 
-      const data = await response.json()
+        if (response.status === 422) {
+          setError(data.error)
+          setShowConfirmDelete(false)
 
-      if (response.status === 422) {
-        setError(data.error)
-        setShowConfirmDelete(false)
-        
-        setTimeout(() => {
-          setShowConfirmInactivate(true)
-        }, 100)
-        return
+          setTimeout(() => {
+            setShowConfirmInactivate(true)
+          }, 100)
+          return
+        }
+
+        if (!response.ok) throw new Error(data.error || 'Erro ao excluir')
+
+        setSuccess('Produto excluído com sucesso!')
+        fetchProducts(currentPage)
+        setProductToDelete(null)
+      } catch (err: any) {
+        setError(err.message || 'Erro ao excluir produto')
+        setProductToDelete(null)
       }
-
-      if (!response.ok) throw new Error(data.error || 'Erro ao excluir')
-
-      setSuccess('Produto excluído com sucesso!')
-      fetchProducts(currentPage)
-      setProductToDelete(null)
-    } catch (err: any) {
-      setError(err.message || 'Erro ao excluir produto')
-      setProductToDelete(null)
-    }
+    })
   }
 
   const handleInativar = async () => {
     if (!productToDelete) return
+    wrap(async () => {
+      try {
+        const response = await fetch(`/api/produtos/${productToDelete}/inativar`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
-    try {
-      const response = await fetch(`/api/produtos/${productToDelete}/inativar`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
+        if (!response.ok) throw new Error('Erro ao inativar')
 
-      if (!response.ok) throw new Error('Erro ao inativar')
-
-      setSuccess('Produto inativado com sucesso!')
-      fetchProducts(currentPage)
-    } catch (err: any) {
-      setError(err.message || 'Erro ao inativar produto')
-    } finally {
-      setProductToDelete(null)
-    }
+        setSuccess('Produto inativado com sucesso!')
+        fetchProducts(currentPage)
+      } catch (err: any) {
+        setError(err.message || 'Erro ao inativar produto')
+      } finally {
+        setProductToDelete(null)
+      }
+    })
   }
 
   const resetForm = () => {
@@ -277,7 +260,6 @@ export default function Products() {
       nome: '',
       data_validade: '',
       categoria_id: categorias[0]?.id || '',
-      fornecedor_id: fornecedores[0]?.id || '',
       quantidade_atual: '',
       estoque_minimo: '',
       ativo: true
@@ -381,7 +363,6 @@ export default function Products() {
                 <tr>
                   <th>Código</th>
                   <th>Produto</th>
-                  <th>Fornecedor</th>
                   <th>Categoria</th>
                   <th>Saldo atual</th>
                   <th>Estoque mínimo</th>
@@ -398,119 +379,118 @@ export default function Products() {
                     const [ano, mes, dia] = p.data_validade.split('T')[0].split('-')
                     const dataValidade = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia))
                     dataValidade.setHours(0, 0, 0, 0)
-                    
+
                     const dataLimite = new Date(hoje)
                     dataLimite.setDate(hoje.getDate() + 15)
-                    
+
                     if (dataValidade < hoje) {
                       validadeStatus = 'vencido'
                     } else if (dataValidade <= dataLimite) {
                       validadeStatus = 'proximo'
                     }
                   }
-                  
+
                   return (
-                  <tr key={p.id} className="products-table__row" style={{
-                    background: validadeStatus === 'vencido' ? 'rgba(244, 63, 94, 0.05)' : 
-                                validadeStatus === 'proximo' ? 'rgba(251, 191, 36, 0.05)' : 
-                                undefined
-                  }}>
-                    <td className="products-table__cell">
-                      <span className="products-codigo">{p.codigo}</span>
-                    </td>
-                    <td className="products-table__cell">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span className="products-name">{p.nome}</span>
-                        {p.data_validade && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>
-                              Validade: {p.data_validade.split('T')[0].split('-').reverse().join('/')}
-                            </span>
-                            {validadeStatus === 'vencido' && (
-                              <span style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: '#dc2626',
-                                background: 'rgba(244, 63, 94, 0.15)',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                              }}>
-                                VENCIDO
+                    <tr key={p.id} className="products-table__row" style={{
+                      background: validadeStatus === 'vencido' ? 'rgba(244, 63, 94, 0.05)' :
+                        validadeStatus === 'proximo' ? 'rgba(251, 191, 36, 0.05)' :
+                          undefined
+                    }}>
+                      <td className="products-table__cell">
+                        <span className="products-codigo">{p.codigo}</span>
+                      </td>
+                      <td className="products-table__cell">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span className="products-name">{p.nome}</span>
+                          {p.data_validade && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                Validade: {p.data_validade.split('T')[0].split('-').reverse().join('/')}
                               </span>
-                            )}
-                            {validadeStatus === 'proximo' && (
-                              <span style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: '#d97706',
-                                background: 'rgba(251, 191, 36, 0.15)',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                              }}>
-                                VENCE EM BREVE
-                              </span>
-                            )}
-                          </div>
+                              {validadeStatus === 'vencido' && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  color: '#dc2626',
+                                  background: 'rgba(244, 63, 94, 0.15)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                                }}>
+                                  VENCIDO
+                                </span>
+                              )}
+                              {validadeStatus === 'proximo' && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  color: '#d97706',
+                                  background: 'rgba(251, 191, 36, 0.15)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                                }}>
+                                  VENCE EM BREVE
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="products-table__cell">
+                        <span className="products-categoria">{p.categoria_nome || '-'}</span>
+                      </td>
+                      <td className="products-table__cell">
+                        <div className="products-amount">
+                          <span className="products-amount-value">{p.quantidade_atual}</span>
+                          {p.estoque_status === 'crítico' && (
+                            <AlertTriangle size={14} color="#dc2626" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="products-table__cell">{p.estoque_minimo}</td>
+                      <td className="products-table__cell">
+                        <span className={`products-status ${p.ativo ? 'products-status--active' : 'products-status--inactive'}`}>
+                          {p.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                        {p.estoque_status === 'crítico' && p.ativo && (
+                          <span className="products-alert-badge">Estoque baixo</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="products-table__cell">{p.fornecedor_nome || '-'}</td>
-                    <td className="products-table__cell">
-                      <span className="products-categoria">{p.categoria_nome || '-'}</span>
-                    </td>
-                    <td className="products-table__cell">
-                      <div className="products-amount">
-                        <span className="products-amount-value">{p.quantidade_atual}</span>
-                        {p.estoque_status === 'crítico' && (
-                          <AlertTriangle size={14} color="#dc2626" />
+                      </td>
+                      <td className="products-table__cell products-actions">
+                        <button
+                          onClick={() => handleEdit(p)}
+                          className="products-action-btn products-action-btn--edit"
+                          title="Editar"
+                          disabled={!canCreate}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        {canCreate && (
+                          <button
+                            onClick={() => {
+                              setProductToDelete(p.id)
+                              setShowConfirmDelete(true)
+                            }}
+                            className="products-action-btn products-action-btn--delete"
+                            title="Excluir"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         )}
-                      </div>
-                    </td>
-                    <td className="products-table__cell">{p.estoque_minimo}</td>
-                    <td className="products-table__cell">
-                      <span className={`products-status ${p.ativo ? 'products-status--active' : 'products-status--inactive'}`}>
-                        {p.ativo ? 'Ativo' : 'Inativo'}
-                      </span>
-                      {p.estoque_status === 'crítico' && p.ativo && (
-                        <span className="products-alert-badge">Estoque baixo</span>
-                      )}
-                    </td>
-                    <td className="products-table__cell products-actions">
-                      <button
-                        onClick={() => handleEdit(p)}
-                        className="products-action-btn products-action-btn--edit"
-                        title="Editar"
-                        disabled={!canCreate}
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      {canCreate && (
-                        <button
-                          onClick={() => {
-                            setProductToDelete(p.id)
-                            setShowConfirmDelete(true)
-                          }}
-                          className="products-action-btn products-action-btn--delete"
-                          title="Excluir"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                      {!canCreate && (
-                        <button
-                          className="products-action-btn products-action-btn--view"
-                          title="Visualizar"
-                          disabled
-                        >
-                          <Eye size={16} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                        {!canCreate && (
+                          <button
+                            className="products-action-btn products-action-btn--view"
+                            title="Visualizar"
+                            disabled
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
                   )
                 })}
               </tbody>
@@ -605,20 +585,6 @@ export default function Products() {
                   </div>
 
                   <div className="products-form__group">
-                    <label>Fornecedor *</label>
-                    <select
-                      value={formData.fornecedor_id}
-                      onChange={(e) => setFormData({ ...formData, fornecedor_id: e.target.value })}
-                      className="products-input"
-                    >
-                      <option value="">Selecione um fornecedor</option>
-                      {fornecedores.map(f => (
-                        <option key={f.id} value={f.id}>{f.nome}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="products-form__group">
                     <label>Saldo Atual (unidades) *</label>
                     <input
                       type="number"
@@ -667,7 +633,7 @@ export default function Products() {
             </div>
           </div>
         )}
-        
+
         {showConfirmDelete && (
           <ConfirmModal
             isOpen={showConfirmDelete}

@@ -7,15 +7,15 @@ const router = Router()
 
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { 
-      tipo, 
-      produto_id, 
-      categoria_id, 
-      usuario_id, 
-      data_inicio, 
-      data_fim, 
-      page = '1', 
-      limit = '10' 
+    const {
+      tipo,
+      produto_id,
+      categoria_id,
+      usuario_id,
+      data_inicio,
+      data_fim,
+      page = '1',
+      limit = '10'
     } = req.query
 
     let query = supabase
@@ -91,8 +91,7 @@ router.get('/entradas', authMiddleware, async (req: Request, res: Response) => {
       .from('movimentacoes')
       .select(`
         *,
-        usuario:usuarios(nome),
-        fornecedor:fornecedores(nome)
+        usuario:usuarios(nome)
       `, { count: 'exact' })
       .eq('tipo', 'ENTRADA')
 
@@ -114,8 +113,6 @@ router.get('/entradas', authMiddleware, async (req: Request, res: Response) => {
       produto_id: mov.produto_id,
       produto_nome: mov.produto_nome,
       quantidade: mov.quantidade,
-      fornecedor_id: mov.fornecedor_id,
-      fornecedor_nome: mov.fornecedor?.nome || '-',
       numero_nf: mov.observacao?.match(/NF:\s*(\S+)/)?.[1] || '-',
       usuario_nome: mov.usuario?.nome || 'Usuário desconhecido',
       created_at: mov.created_at,
@@ -194,7 +191,7 @@ router.get('/saidas', authMiddleware, async (req: Request, res: Response) => {
 
 router.post('/entrada', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
-    const { produto_id, quantidade, fornecedor_id, numero_nf, data, observacao } = req.body
+    const { produto_id, quantidade, numero_nf, data, observacao } = req.body
     const usuario_id = (req as any).user.id
 
     if (!produto_id || !quantidade || quantidade <= 0) {
@@ -232,7 +229,6 @@ router.post('/entrada', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (r
         produto_nome: produto.nome,
         quantidade: parseInt(quantidade),
         usuario_id,
-        fornecedor_id: fornecedor_id || null,
         observacao: obs,
         created_at: dataMovimentacao
       })
@@ -254,9 +250,9 @@ router.post('/entrada', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (r
 
     getIO().emit('estoque_atualizado')
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Entrada registrada com sucesso',
-      movimentacao 
+      movimentacao
     })
   } catch (error) {
     console.error('Erro ao registrar entrada:', error)
@@ -284,8 +280,8 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
     }
 
     if (produto.quantidade_atual < parseInt(quantidade)) {
-      return res.status(400).json({ 
-        error: `Estoque insuficiente. Disponível: ${produto.quantidade_atual} unidades` 
+      return res.status(400).json({
+        error: `Estoque insuficiente. Disponível: ${produto.quantidade_atual} unidades`
       })
     }
 
@@ -310,7 +306,6 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
         produto_nome: produto.nome,
         quantidade: parseInt(quantidade),
         usuario_id,
-        fornecedor_id: null,
         observacao: obs,
         created_at: dataMovimentacao
       })
@@ -332,9 +327,9 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 
     getIO().emit('estoque_atualizado')
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Saída registrada com sucesso',
-      movimentacao 
+      movimentacao
     })
   } catch (error) {
     console.error('Erro ao registrar saída:', error)
@@ -345,7 +340,7 @@ router.post('/saida', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { quantidade, fornecedor_id, numero_nf, motivo, data, observacao } = req.body
+    const { quantidade, numero_nf, motivo, data, observacao } = req.body
 
     const { data: movimentacaoAtual, error: movError } = await supabase
       .from('movimentacoes')
@@ -372,10 +367,10 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       novoEstoque = estoqueAtual + diferencaQuantidade
     } else if (movimentacaoAtual.tipo === 'SAIDA') {
       novoEstoque = estoqueAtual - diferencaQuantidade
-      
+
       if (novoEstoque < 0) {
-        return res.status(400).json({ 
-          error: `Estoque insuficiente. Disponível: ${estoqueAtual + quantidadeAntiga} unidades` 
+        return res.status(400).json({
+          error: `Estoque insuficiente. Disponível: ${estoqueAtual + quantidadeAntiga} unidades`
         })
       }
     }
@@ -399,10 +394,6 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
       quantidade: quantidadeNova,
       observacao: obs,
       created_at: dataMovimentacao
-    }
-
-    if (movimentacaoAtual.tipo === 'ENTRADA' && fornecedor_id !== undefined) {
-      updateData.fornecedor_id = fornecedor_id || null
     }
 
     const { error: updateMovError } = await supabase
@@ -431,7 +422,7 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
 
     getIO().emit('estoque_atualizado')
 
-    res.json({ 
+    res.json({
       message: 'Movimentação atualizada com sucesso',
       estoque_atualizado: novoEstoque
     })
@@ -474,7 +465,7 @@ router.delete('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req
 
     getIO().emit('estoque_atualizado')
 
-    res.json({ 
+    res.json({
       message: 'Movimentação excluída com sucesso. Estoque mantido.',
       estoque_mantido: true
     })
@@ -495,7 +486,7 @@ router.delete('/', authMiddleware, requireRole('ADMIN'), async (req: Request, re
 
     getIO().emit('estoque_atualizado')
 
-    res.json({ 
+    res.json({
       message: 'Histórico de movimentações limpo com sucesso. Os estoques atuais foram mantidos.'
     })
   } catch (error) {

@@ -9,7 +9,8 @@
 html,
 body,
 #root {
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -17,5 +18,444 @@ body {
     "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #020617;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* ─── LIGHT THEME (default) ─────────────────────────────── */
+:root {
+  --bg-body:          #f1f5f9;
+  --bg-page:          linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%);
+  --bg-sidebar:       #ffffff;
+  --bg-card:          #ffffff;
+  --bg-input:         #f8fafc;
+  --bg-hover:         rgba(59,130,246,0.08);
+  --bg-active:        rgba(59,130,246,0.12);
+  --bg-badge:         rgba(59,130,246,0.06);
+
+  --border-sidebar:   rgba(59,130,246,0.15);
+  --border-card:      rgba(59,130,246,0.15);
+  --border-input:     rgba(59,130,246,0.2);
+  --border-subtle:    rgba(203,213,225,0.5);
+
+  --text-primary:     #0f172a;
+  --text-secondary:   #64748b;
+  --text-muted:       #94a3b8;
+  --text-link-active: #1e40af;
+
+  --accent-primary:   #2563eb;
+  --accent-hover:     #1d4ed8;
+  --accent-faint:     rgba(37,99,235,0.08);
+
+  --shadow-sidebar:   2px 0 12px rgba(0,0,0,0.04);
+  --shadow-card:      0 4px 16px rgba(0,0,0,0.06);
+
+  --orb-1:            rgba(59,130,246,0.06);
+  --orb-2:            rgba(96,165,250,0.05);
+
+  --toggle-bg:        #e2e8f0;
+  --toggle-knob:      #ffffff;
+  --toggle-icon:      #64748b;
+}
+
+/* ─── DARK THEME ─────────────────────────────────────────── */
+html.dark {
+  --bg-body:          #0a0f1e;
+  --bg-page:          linear-gradient(135deg, #0d1117 0%, #0f172a 50%, #111827 100%);
+  --bg-sidebar:       #0d1117;
+  --bg-card:          #111827;
+  --bg-input:         #1e293b;
+  --bg-hover:         rgba(99,102,241,0.12);
+  --bg-active:        rgba(99,102,241,0.18);
+  --bg-badge:         rgba(99,102,241,0.1);
+
+  --border-sidebar:   rgba(99,102,241,0.15);
+  --border-card:      rgba(99,102,241,0.12);
+  --border-input:     rgba(99,102,241,0.2);
+  --border-subtle:    rgba(51,65,85,0.8);
+
+  --text-primary:     #f1f5f9;
+  --text-secondary:   #94a3b8;
+  --text-muted:       #475569;
+  --text-link-active: #818cf8;
+
+  --accent-primary:   #6366f1;
+  --accent-hover:     #818cf8;
+  --accent-faint:     rgba(99,102,241,0.12);
+
+  --shadow-sidebar:   2px 0 24px rgba(0,0,0,0.4);
+  --shadow-card:      0 4px 24px rgba(0,0,0,0.3);
+
+  --orb-1:            rgba(99,102,241,0.08);
+  --orb-2:            rgba(139,92,246,0.06);
+
+  --toggle-bg:        #334155;
+  --toggle-icon:      #f1f5f9;
+}
+
+/* ─── SMOOTH TRANSITIONS ─────────────────────────────────── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* ─── DARK MODE GLOBAL OVERRIDES ─────────────────────────── */
+/* Garante que páginas com background inline também respondam ao tema */
+html.dark .products-root,
+html.dark .mov-root,
+html.dark .users-root,
+html.dark .profile-root,
+html.dark .db-root,
+html.dark .db-loading {
+  background: var(--bg-page) !important;
+}
+
+html.dark .products-table-wrapper,
+html.dark .products-modal,
+html.dark .mov-content,
+html.dark .mov-modal,
+html.dark .users-table-wrapper,
+html.dark .users-modal,
+html.dark .profile-card,
+html.dark .db-stat,
+html.dark .db-mov {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .products-table th,
+html.dark .products-table thead {
+  background: rgba(99,102,241,0.1) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .products-table__row:hover,
+html.dark .users-table__row:hover {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .products-table__cell,
+html.dark .users-table__cell,
+html.dark .products-name,
+html.dark .users-name,
+html.dark .products-title,
+html.dark .users-title,
+html.dark .mov-title,
+html.dark .profile-header__title,
+html.dark .db-header__title,
+html.dark .db-mov__title,
+html.dark .db-mov__item-product,
+html.dark .profile-card__title,
+html.dark .profile-avatar-info__name,
+html.dark .profile-security-item__value {
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-subtitle,
+html.dark .users-subtitle,
+html.dark .mov-subtitle,
+html.dark .profile-header__subtitle,
+html.dark .db-header__subtitle,
+html.dark .db-stat__label,
+html.dark .db-mov__subtitle,
+html.dark .db-mov__item-user,
+html.dark .profile-form-label,
+html.dark .profile-avatar-info__email,
+html.dark .profile-security-item__label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .products-input,
+html.dark .users-input,
+html.dark .mov-input,
+html.dark .profile-form-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-filter-select,
+html.dark .products-search {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-search-input {
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-modal-overlay,
+html.dark .users-modal-overlay,
+html.dark .mov-modal-overlay {
+  background: rgba(0,0,0,0.7) !important;
+}
+
+html.dark .products-modal__header,
+html.dark .users-modal__header {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .products-modal__header h2,
+html.dark .users-modal__header h2 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-form__group label,
+html.dark .users-form__group label {
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-btn-cancel,
+html.dark .users-btn-cancel {
+  background: var(--bg-input) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .mov-tabs {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .mov-tab {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .mov-tab--active {
+  color: var(--accent-primary) !important;
+  border-bottom-color: var(--accent-primary) !important;
+}
+
+html.dark .mov-table th {
+  background: rgba(99,102,241,0.1) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .mov-table td {
+  color: var(--text-primary) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .mov-table tr:hover td {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .mov-table-wrapper {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .mov-modal-header {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .mov-modal-header h2 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .mov-form-group label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .mov-btn-cancel {
+  background: var(--bg-input) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .profile-form-input--disabled {
+  background: rgba(30,41,59,0.6) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .profile-security-note {
+  background: rgba(30,41,59,0.5) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .profile-activity-item {
+  background: rgba(30,41,59,0.5) !important;
+}
+
+html.dark .profile-activity-item:hover {
+  background: rgba(30,41,59,0.8) !important;
+}
+
+html.dark .profile-card__header {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .profile-badge-section {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .profile-avatar-section {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .db-mov__item {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .db-mov__item:hover {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .db-mov__header {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .db-mov__item-date,
+html.dark .db-stat__sublabel,
+html.dark .db-mov__empty-sub {
+  color: var(--text-muted) !important;
+}
+
+html.dark .db-mov__empty-title,
+html.dark .db-mov__empty-icon {
+  color: var(--text-secondary) !important;
+  border-color: var(--border-card) !important;
+  background: var(--bg-hover) !important;
+}
+
+html.dark .products-pagination__btn {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .products-pagination__info {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .products-table__row {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .products-codigo {
+  color: var(--accent-hover) !important;
+}
+
+html.dark .products-categoria {
+  background: rgba(99,102,241,0.15) !important;
+  color: var(--accent-hover) !important;
+}
+
+html.dark .products-status--active {
+  background: rgba(16,185,129,0.15) !important;
+}
+
+html.dark .products-status--inactive {
+  background: rgba(100,116,139,0.15) !important;
+}
+
+html.dark .products-alert-badge {
+  background: rgba(239,68,68,0.15) !important;
+}
+
+html.dark .users-badge--admin {
+  background: rgba(99,102,241,0.15) !important;
+  color: var(--accent-hover) !important;
+}
+
+html.dark .users-badge--gestao {
+  background: rgba(16,185,129,0.15) !important;
+}
+
+html.dark .users-status--active {
+  background: rgba(16,185,129,0.15) !important;
+}
+
+html.dark .users-status--inactive {
+  background: rgba(100,116,139,0.15) !important;
+}
+
+html.dark .mov-message--success {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+}
+
+html.dark .mov-message--error {
+  background: rgba(239,68,68,0.15) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+}
+
+html.dark .products-message--success {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+}
+
+html.dark .products-message--error {
+  background: rgba(239,68,68,0.15) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+}
+
+html.dark .users-message--success {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+}
+
+html.dark .users-message--error {
+  background: rgba(239,68,68,0.15) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+}
+
+html.dark .mov-filter-search,
+html.dark .mov-filter-select,
+html.dark .mov-filter-date {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .mov-filter-input {
+  color: var(--text-primary) !important;
+}
+
+html.dark .mov-saldo-info {
+  background: rgba(99,102,241,0.1) !important;
+  border-color: rgba(99,102,241,0.2) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .mov-empty {
+  color: var(--text-muted) !important;
+}
+
+html.dark .mov-btn-clear-history {
+  background: rgba(239,68,68,0.1) !important;
+  border-color: rgba(239,68,68,0.2) !important;
+  color: #f87171 !important;
+}
+
+html.dark .products-empty-title {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .products-empty-sub {
+  color: var(--text-muted) !important;
+}
+
+html.dark .users-empty-title {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .users-empty-sub {
+  color: var(--text-muted) !important;
+}
+
+html.dark .users-access-denied,
+html.dark .users-loading {
+  background: var(--bg-page) !important;
+}
+
+html.dark .users-denied-content h2 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .users-denied-content p {
+  color: var(--text-secondary) !important;
 }

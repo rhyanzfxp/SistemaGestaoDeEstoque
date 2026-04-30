@@ -6,6 +6,91 @@ import { getIO } from '../utils/socket'
 
 const router = Router()
 
+// Upload de avatar do próprio usuário
+router.post('/me/avatar', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id
+    const contentType = req.headers['content-type'] || 'image/jpeg'
+
+    // Valida tipo de arquivo
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowed.includes(contentType)) {
+      return res.status(400).json({ error: 'Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.' })
+    }
+
+    const ext = contentType.split('/')[1].replace('jpeg', 'jpg')
+    const filePath = `${userId}/avatar.${ext}`
+
+    // Faz upload direto do body (buffer) para o Supabase Storage
+    const chunks: Buffer[] = []
+    await new Promise<void>((resolve, reject) => {
+      req.on('data', (chunk: Buffer) => chunks.push(chunk))
+      req.on('end', resolve)
+      req.on('error', reject)
+    })
+    const fileBuffer = Buffer.concat(chunks)
+
+    if (fileBuffer.length === 0) {
+      return res.status(400).json({ error: 'Arquivo vazio' })
+    }
+
+    if (fileBuffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Arquivo muito grande. Máximo 5 MB.' })
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, fileBuffer, {
+        contentType,
+        upsert: true
+      })
+
+    if (uploadError) throw uploadError
+
+    // Gera URL pública
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath)
+
+    const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`
+
+    // Salva URL no banco
+    const { error: updateError } = await supabase
+      .from('usuarios')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', userId)
+
+    if (updateError) throw updateError
+
+    res.json({ avatar_url: avatarUrl })
+  } catch (error) {
+    console.error('Erro ao fazer upload do avatar:', error)
+    res.status(500).json({ error: 'Erro ao fazer upload do avatar' })
+  }
+})
+
+// Remove avatar do próprio usuário
+router.delete('/me/avatar', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id
+
+    // Tenta remover arquivos com extensões possíveis
+    const extensions = ['jpg', 'png', 'webp', 'gif']
+    for (const ext of extensions) {
+      await supabase.storage.from('avatars').remove([`${userId}/avatar.${ext}`])
+    }
+
+    await supabase
+      .from('usuarios')
+      .update({ avatar_url: null })
+      .eq('id', userId)
+
+    res.json({ message: 'Avatar removido com sucesso' })
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao remover avatar' })
+  }
+})
+
 router.get('/', authMiddleware, requireRole('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { data: users, error } = await supabase

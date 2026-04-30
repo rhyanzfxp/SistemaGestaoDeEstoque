@@ -27,9 +27,9 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar />
-      <main className="flex-1">
+      <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {children}
       </main>
     </div>

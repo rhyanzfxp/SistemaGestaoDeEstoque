@@ -3,6 +3,7 @@ import { Plus, Edit2, X, AlertTriangle, Check, RefreshCw, Trash2 } from 'lucide-
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
+import { useSubmitting } from '../hooks/useSubmitting';
 
 type CategoriaTipo = 'alimentício' | 'escolar' | 'escritório' | 'uso coletivo' | 'limpeza' | 'higiene' | 'bebidas' | 'medicamentos' | 'eletrônicos' | 'ferramentas' | 'vestuário' | 'outros';
 
@@ -16,6 +17,7 @@ interface Categoria {
 export default function Categories() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
+  const wrap = useSubmitting();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -65,88 +67,91 @@ export default function Categories() {
     if (token) fetchCategories();
   });
 
-  useEffect(() => { 
-    if (token) fetchCategories(); 
+  useEffect(() => {
+    if (token) fetchCategories();
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    wrap(async () => {
+      setError('');
+      setSuccess('');
 
-    const method = editingId ? 'PUT' : 'POST';
-    const url = editingId
-      ? `/api/categories/${editingId}`
-      : `/api/categories`;
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId
+        ? `/api/categories/${editingId}`
+        : `/api/categories`;
 
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
 
-      if (!response.ok) throw new Error('Erro ao salvar');
+        if (!response.ok) throw new Error('Erro ao salvar');
 
-      setSuccess(editingId ? 'Categoria atualizada!' : 'Categoria criada com sucesso!');
-      setShowModal(false);
-      setEditingId(null); 
-      setFormData({ nome: '', tipo: 'alimentício', perecivel: false });
-      fetchCategories();
-    } catch {
-      setError('Erro ao salvar categoria');
-    }
+        setSuccess(editingId ? 'Categoria atualizada!' : 'Categoria criada com sucesso!');
+        setShowModal(false);
+        setEditingId(null);
+        setFormData({ nome: '', tipo: 'alimentício', perecivel: false });
+        fetchCategories();
+      } catch {
+        setError('Erro ao salvar categoria');
+      }
+    });
   };
 
   const handleDelete = async () => {
     if (!deletingId) return;
-    
-    console.log('Tentando excluir categoria com ID:', deletingId);
-    setError('');
-    setSuccess('');
+    wrap(async () => {
+      console.log('Tentando excluir categoria com ID:', deletingId);
+      setError('');
+      setSuccess('');
 
-    try {
-      const url = `/api/categories/${deletingId}`;
-      console.log('URL da requisição:', url);
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Status da resposta:', response.status);
-      
-      const responseText = await response.text();
-      let data;
       try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (parseError) {
-        console.error('Erro ao interpretar resposta do servidor:', responseText);
-        throw new Error(`Erro do Servidor (${response.status}): A resposta não pôde ser interpretada (possível erro no proxy/rota).`);
+        const url = `/api/categories/${deletingId}`;
+        console.log('URL da requisição:', url);
+
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Status da resposta:', response.status);
+
+        const responseText = await response.text();
+        let data;
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          console.error('Erro ao interpretar resposta do servidor:', responseText);
+          throw new Error(`Erro do Servidor (${response.status}): A resposta não pôde ser interpretada (possível erro no proxy/rota).`);
+        }
+
+        console.log('Dados da resposta:', data);
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao excluir a categoria');
+        }
+
+        setSuccess('Categoria excluída com sucesso!');
+        setShowDeleteModal(false);
+        setDeletingId(null);
+        fetchCategories();
+      } catch (err: any) {
+        console.error('Erro ao excluir:', err);
+        setError(err.message || 'Erro ao excluir categoria');
+        setShowDeleteModal(false);
       }
-
-      console.log('Dados da resposta:', data);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao excluir a categoria');
-      }
-
-      setSuccess('Categoria excluída com sucesso!');
-      setShowDeleteModal(false);
-      setDeletingId(null);
-      fetchCategories();
-    } catch (err: any) {
-      console.error('Erro ao excluir:', err);
-      setError(err.message || 'Erro ao excluir categoria');
-      setShowDeleteModal(false);
-    }
+    });
   };
 
   if (isLoading) {
@@ -178,8 +183,8 @@ export default function Categories() {
             <h1 className="products-title">Categorias</h1>
             <p className="products-subtitle">Gerencie as classificações para o estoque</p>
           </div>
-          <button 
-            className="products-btn-create" 
+          <button
+            className="products-btn-create"
             onClick={() => {
               setEditingId(null);
               setFormData({ nome: '', tipo: 'alimentício', perecivel: false });
@@ -242,18 +247,18 @@ export default function Categories() {
               <form onSubmit={handleSubmit} className="products-form">
                 <div className="products-form__group">
                   <label>Nome da Categoria *</label>
-                  <input 
+                  <input
                     type="text" required className="products-input"
                     value={formData.nome}
-                    onChange={e => setFormData({...formData, nome: e.target.value})}
+                    onChange={e => setFormData({ ...formData, nome: e.target.value })}
                   />
                 </div>
                 <div className="products-form__group">
                   <label>Tipo *</label>
-                  <select 
+                  <select
                     className="products-input"
                     value={formData.tipo}
-                    onChange={e => setFormData({...formData, tipo: e.target.value as CategoriaTipo})}
+                    onChange={e => setFormData({ ...formData, tipo: e.target.value as CategoriaTipo })}
                   >
                     <option value="alimentício">Alimentício</option>
                     <option value="escolar">Escolar</option>
@@ -270,10 +275,10 @@ export default function Categories() {
                   </select>
                 </div>
                 <div className="products-form__group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
-                  <input 
+                  <input
                     type="checkbox" id="perecivel"
                     checked={formData.perecivel}
-                    onChange={e => setFormData({...formData, perecivel: e.target.checked})}
+                    onChange={e => setFormData({ ...formData, perecivel: e.target.checked })}
                   />
                   <label htmlFor="perecivel" style={{ cursor: 'pointer' }}>Esta categoria é perecível?</label>
                 </div>
@@ -297,15 +302,15 @@ export default function Categories() {
                   Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.
                 </p>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button 
-                    onClick={() => setShowDeleteModal(false)} 
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
                     className="products-btn-cancel"
                     style={{ flex: 1 }}
                   >
                     Cancelar
                   </button>
-                  <button 
-                    onClick={handleDelete} 
+                  <button
+                    onClick={handleDelete}
                     className="products-btn-submit"
                     style={{ flex: 1, background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}
                   >

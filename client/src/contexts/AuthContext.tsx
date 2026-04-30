@@ -6,6 +6,7 @@ interface User {
   email: string
   nome: string
   perfil: 'ADMIN' | 'GESTAO'
+  avatar_url?: string | null
 }
 
 interface AuthContextType {
@@ -13,6 +14,7 @@ interface AuthContextType {
   token: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  updateAvatar: (avatarUrl: string | null) => void
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -40,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json()
-    
+
     setToken(data.token)
     setUser(data.user)
     sessionStorage.setItem('token', data.token)
@@ -54,12 +56,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('user')
   }
 
+  const updateAvatar = (avatarUrl: string | null) => {
+    setUser(prev => {
+      if (!prev) return prev
+      const updated = { ...prev, avatar_url: avatarUrl }
+      sessionStorage.setItem('user', JSON.stringify(updated))
+      return updated
+    })
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
       token,
       login,
       logout,
+      updateAvatar,
       isAuthenticated: !!token,
       isLoading: false
     }}>
