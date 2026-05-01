@@ -1,11 +1,34 @@
 import { NavLink, Link } from 'react-router-dom'
-import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Tags, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Tags, Sun, Moon, Bell } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useEffect, useState } from 'react'
+import { useRealtime } from '../hooks/useRealtime'
 
 export default function Sidebar() {
-  const { user, logout } = useAuth()
+  const { user, logout, token } = useAuth()
   const { isDark, toggleTheme } = useTheme()
+  const [alertCount, setAlertCount] = useState(0)
+
+  const fetchAlertCount = async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/alertas/count', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      setAlertCount(data.count ?? 0)
+    } catch {
+      setAlertCount(0)
+    }
+  }
+
+  useRealtime('alertas_atualizados', fetchAlertCount)
+  useRealtime('estoque_atualizado', fetchAlertCount)
+
+  useEffect(() => {
+    fetchAlertCount()
+  }, [token])
 
   const initials = user?.nome
     ? user.nome.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -171,6 +194,28 @@ export default function Sidebar() {
         .sb-link--active .sb-link__chevron {
           opacity: 1;
           transform: translateX(0);
+        }
+
+        .sb-alert-badge {
+          margin-left: auto;
+          min-width: 20px;
+          height: 20px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #f43f5e, #e11d48);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 5px;
+          box-shadow: 0 2px 8px rgba(244,63,94,0.45);
+          animation: sb-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes sb-pulse {
+          0%, 100% { box-shadow: 0 2px 8px rgba(244,63,94,0.45); }
+          50% { box-shadow: 0 2px 14px rgba(244,63,94,0.75); }
         }
 
         /* ── Theme toggle ── */
@@ -363,6 +408,15 @@ export default function Sidebar() {
           <NavLink to="/categorias" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
             <Tags size={18} className="sb-link__icon" strokeWidth={2} />
             <span>Categorias</span>
+            <ChevronRight size={14} className="sb-link__chevron" />
+          </NavLink>
+
+          <NavLink to="/alertas" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
+            <Bell size={18} className="sb-link__icon" strokeWidth={2} />
+            <span>Alertas</span>
+            {alertCount > 0 && (
+              <span className="sb-alert-badge">{alertCount > 99 ? '99+' : alertCount}</span>
+            )}
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 

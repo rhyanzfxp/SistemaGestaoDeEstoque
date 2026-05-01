@@ -8,6 +8,7 @@ import usersRoutes from './routes/users.routes'
 import productsRoutes from './routes/products.routes'
 import categoriesRoutes from './routes/categories.routes'
 import movimentacoesRoutes from './routes/movimentacoes.routes'
+import alertasRoutes, { runEstoqueMinimoJob, runVencimentoJob } from './routes/alertas.routes'
 import { initSocket } from './utils/socket'
 
 dotenv.config()
@@ -27,8 +28,22 @@ app.use('/api/users', usersRoutes)
 app.use('/api/produtos', productsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/movimentacoes', movimentacoesRoutes)
+app.use('/api/alertas', alertasRoutes)
+
+const HORA_EM_MS = 60 * 60 * 1000
+
+async function iniciarJobs() {
+  await runEstoqueMinimoJob()
+  await runVencimentoJob()
+
+  setInterval(runEstoqueMinimoJob, HORA_EM_MS)
+  setInterval(runVencimentoJob, HORA_EM_MS)
+
+  console.log('[CronJob] Jobs de alerta iniciados (intervalo: 1h)')
+}
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
   console.log('Connected to Supabase')
+  iniciarJobs()
 })

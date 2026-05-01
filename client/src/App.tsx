@@ -11,6 +11,7 @@ import Movimentacoes from './pages/Movimentacoes'
 import Profile from './pages/Profile'
 import EsqueciSenha from './pages/EsqueciSenha'
 import RedefinirSenha from './pages/RedefinirSenha'
+import Alertas from './pages/Alertas'
 
 function App() {
   return (
@@ -69,6 +70,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/alertas"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                  <Alertas />
                 </ProtectedRoute>
               }
             />
