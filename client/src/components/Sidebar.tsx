@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom'
-import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Tags, Sun, Moon, Bell } from 'lucide-react'
+import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Tags, Sun, Moon, Bell, FileText } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useEffect, useState } from 'react'
@@ -417,6 +417,12 @@ export default function Sidebar() {
             {alertCount > 0 && (
               <span className="sb-alert-badge">{alertCount > 99 ? '99+' : alertCount}</span>
             )}
+            <ChevronRight size={14} className="sb-link__chevron" />
+          </NavLink>
+
+          <NavLink to="/relatorios" className={({ isActive }) => `sb-link ${isActive ? 'sb-link--active' : ''}`}>
+            <FileText size={18} className="sb-link__icon" strokeWidth={2} />
+            <span>Relatórios</span>
             <ChevronRight size={14} className="sb-link__chevron" />
           </NavLink>
 

@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Categories from './pages/Categories'
 import Movimentacoes from './pages/Movimentacoes'
 import Profile from './pages/Profile'
+import Reports from './pages/Reports'
 import EsqueciSenha from './pages/EsqueciSenha'
 import RedefinirSenha from './pages/RedefinirSenha'
 import Alertas from './pages/Alertas'
@@ -79,6 +80,15 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
                   <Alertas />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/relatorios"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'GESTAO']}>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
