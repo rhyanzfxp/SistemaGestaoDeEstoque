@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Package, AlertTriangle, Calendar, TrendingUp,
-  ArrowUpRight, ArrowDownRight, Clock, RefreshCw, Boxes
+  ArrowUpRight, ArrowDownRight, Clock, RefreshCw, Boxes, Bell
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRealtime } from '../hooks/useRealtime'
@@ -66,12 +66,14 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [alertCount, setAlertCount] = useState(0)
+  const [alertBreakdown, setAlertBreakdown] = useState({ estoque: 0, vencimento: 0, vencido: 0 })
   const { token, user } = useAuth()
   const navigate = useNavigate()
 
   const firstName = user?.nome?.split(' ')[0] ?? 'Usuário'
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       const response = await fetch('/api/dashboard', {
         headers: { Authorization: `Bearer ${token}` },
@@ -84,16 +86,35 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [token])
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/alertas?visualizado=false', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const list = await res.json()
+      if (!Array.isArray(list)) return
+      setAlertCount(list.length)
+      setAlertBreakdown({
+        estoque: list.filter((a: any) => a.tipo === 'ESTOQUE_MINIMO').length,
+        vencimento: list.filter((a: any) => a.tipo === 'VENCIMENTO_PROXIMO').length,
+        vencido: list.filter((a: any) => a.tipo === 'VENCIDO').length,
+      })
+    } catch {
+      setAlertCount(0)
+    }
+  }, [token])
 
   useRealtime('estoque_atualizado', fetchDashboard)
-
+  useRealtime('alertas_atualizados', fetchAlerts)
 
   useEffect(() => {
     fetchDashboard()
-    const interval = setInterval(fetchDashboard, 60_000)
+    fetchAlerts()
+    const interval = setInterval(() => { fetchDashboard(); fetchAlerts() }, 60_000)
     return () => clearInterval(interval)
-  }, [token])
+  }, [fetchDashboard, fetchAlerts])
 
   const stats = getStats(data)
 
@@ -159,6 +180,48 @@ export default function Dashboard() {
               )
             })}
           </section>
+
+          {alertCount > 0 && (
+            <section className="db-alert-banner">
+              <div className="db-alert-banner__left">
+                <div className="db-alert-banner__icon">
+                  <Bell size={20} color="#f59e0b" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <p className="db-alert-banner__title">
+                    {alertCount} alerta{alertCount !== 1 ? 's' : ''} pendente{alertCount !== 1 ? 's' : ''}
+                  </p>
+                  <div className="db-alert-banner__pills">
+                    {alertBreakdown.estoque > 0 && (
+                      <span className="db-alert-pill db-alert-pill--estoque">
+                        <AlertTriangle size={11} />
+                        {alertBreakdown.estoque} estoque mínimo
+                      </span>
+                    )}
+                    {alertBreakdown.vencimento > 0 && (
+                      <span className="db-alert-pill db-alert-pill--vencimento">
+                        <Clock size={11} />
+                        {alertBreakdown.vencimento} vencimento próximo
+                      </span>
+                    )}
+                    {alertBreakdown.vencido > 0 && (
+                      <span className="db-alert-pill db-alert-pill--vencido">
+                        <Calendar size={11} />
+                        {alertBreakdown.vencido} vencido{alertBreakdown.vencido !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                className="db-alert-banner__cta"
+                onClick={() => navigate('/alertas')}
+                id="btn-ver-alertas"
+              >
+                Ver todos os alertas
+              </button>
+            </section>
+          )}
 
           <section className="db-mov">
             <div className="db-mov__header">
@@ -291,4 +354,16 @@ const dashStyles = `
   .db-mov__empty-icon { width:64px; height:64px; border-radius:18px; background:var(--accent-faint); border:1px solid var(--border-card); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
   .db-mov__empty-title { font-size:15px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
   .db-mov__empty-sub { font-size:13px; color:var(--text-muted); }
+
+  .db-alert-banner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:20px 24px; border-radius:20px; background:linear-gradient(135deg,rgba(245,158,11,0.10),rgba(244,63,94,0.07)); border:1px solid rgba(245,158,11,0.28); box-shadow:0 4px 20px rgba(245,158,11,0.10); animation:db-fadeUp 0.4s ease both; }
+  .db-alert-banner__left { display:flex; align-items:flex-start; gap:14px; flex:1; min-width:0; }
+  .db-alert-banner__icon { width:44px; height:44px; flex-shrink:0; border-radius:13px; background:rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.28); display:flex; align-items:center; justify-content:center; }
+  .db-alert-banner__title { font-family:'Sora',sans-serif; font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:8px; }
+  .db-alert-banner__pills { display:flex; flex-wrap:wrap; gap:7px; }
+  .db-alert-pill { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; }
+  .db-alert-pill--estoque { background:rgba(245,158,11,0.14); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+  .db-alert-pill--vencimento { background:rgba(249,115,22,0.14); color:#f97316; border:1px solid rgba(249,115,22,0.3); }
+  .db-alert-pill--vencido { background:rgba(244,63,94,0.14); color:#f43f5e; border:1px solid rgba(244,63,94,0.3); }
+  .db-alert-banner__cta { flex-shrink:0; padding:9px 20px; border-radius:10px; border:none; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.18s,transform 0.15s; box-shadow:0 4px 12px rgba(245,158,11,0.35); white-space:nowrap; }
+  .db-alert-banner__cta:hover { opacity:0.88; transform:translateY(-1px); }
 `

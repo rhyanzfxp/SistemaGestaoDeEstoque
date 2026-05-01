@@ -381,7 +381,7 @@ export default function Products() {
                     dataValidade.setHours(0, 0, 0, 0)
 
                     const dataLimite = new Date(hoje)
-                    dataLimite.setDate(hoje.getDate() + 15)
+                    dataLimite.setDate(hoje.getDate() + 30)
 
                     if (dataValidade < hoje) {
                       validadeStatus = 'vencido'

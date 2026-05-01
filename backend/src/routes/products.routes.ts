@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import { authMiddleware, requireRole } from '../middleware/auth.middleware'
 import { getIO } from '../utils/socket'
+import { runEstoqueMinimoJob, runVencimentoJob } from './alertas.routes'
 
 const router = Router()
 
@@ -110,6 +111,8 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
     if (error) throw error
 
     getIO().emit('estoque_atualizado')
+    runEstoqueMinimoJob()
+    runVencimentoJob()
 
     res.status(201).json(novoProduct)
   } catch (error) {
@@ -157,6 +160,8 @@ router.put('/:id', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: R
     }
 
     getIO().emit('estoque_atualizado')
+    runEstoqueMinimoJob()
+    runVencimentoJob()
 
     res.json(produto)
   } catch (error) {
