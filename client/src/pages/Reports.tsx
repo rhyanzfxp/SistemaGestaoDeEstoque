@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import jsPDF from 'jspdf'
 import {
   FileText, Download, Filter, Package, ArrowUpRight, ArrowDownLeft,
   AlertTriangle, Calendar, Users, RefreshCw
@@ -279,6 +280,43 @@ export default function Reports() {
     }
   }
 
+  // Funções auxiliares para exportação
+  const getFilteredHeaders = (headers: string[]) => {
+    return headers.filter(h => !['id', 'codigo', 'created_at', 'updated_at'].includes(h))
+  }
+
+  const getHeaderLabel = (header: string) => {
+    const labels: Record<string, string> = {
+      nome: 'Nome',
+      categoria: 'Categoria',
+      quantidade: 'Quantidade',
+      estoque_minimo: 'Estoque Mínimo',
+      status: 'Status',
+      fornecedor: 'Fornecedor',
+      ativo: 'Status',
+      tipo: 'Tipo',
+      produto: 'Produto',
+      usuario: 'Usuário',
+      email: 'E-mail',
+      perfil: 'Perfil',
+      dias_para_vencer: 'Dias para Vencer',
+      data_validade: 'Data de Validade',
+      quantidade_movida: 'Quantidade Movida'
+    }
+    return labels[header] || header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')
+  }
+
+  const getReportTitle = (filename: string) => {
+    const titles: Record<string, string> = {
+      'relatorio-produtos': 'RELATÓRIO DE PRODUTOS',
+      'relatorio-movimentacoes': 'RELATÓRIO DE MOVIMENTAÇÕES',
+      'relatorio-estoque-critico': 'RELATÓRIO DE ESTOQUE CRÍTICO',
+      'relatorio-vencimento': 'RELATÓRIO DE PRÓXIMOS VENCIMENTOS',
+      'relatorio-usuarios': 'RELATÓRIO DE USUÁRIOS'
+    }
+    return titles[filename] || filename.toUpperCase()
+  }
+
   // Funções de Exportação
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
@@ -286,9 +324,11 @@ export default function Reports() {
       return
     }
 
-    const headers = Object.keys(data[0])
+    const allHeaders = Object.keys(data[0])
+    const headers = getFilteredHeaders(allHeaders)
+    
     const csvContent = [
-      headers.join(','),
+      headers.map(h => getHeaderLabel(h)).join(','),
       ...data.map(row =>
         headers.map(header => {
           const value = row[header]
@@ -313,24 +353,108 @@ export default function Reports() {
       return
     }
 
-    const headers = Object.keys(data[0])
-    let pdfContent = `Relatório: ${filename}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`
+    try {
+      const pdf = new jsPDF()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const margin = 15
+      let yPosition = margin
 
-    // Cabeçalhos
-    pdfContent += headers.map(h => h.padEnd(15)).join('') + '\n'
-    pdfContent += '='.repeat(headers.length * 15) + '\n'
+      const allHeaders = Object.keys(data[0])
+      const headers = getFilteredHeaders(allHeaders)
+      const reportTitle = getReportTitle(filename)
+      const date = new Date().toLocaleDateString('pt-BR')
 
-    // Dados
-    data.forEach(row => {
-      pdfContent += headers.map(h => String(row[h] || '-').padEnd(15)).join('') + '\n'
-    })
+      // Configurar fonte
+      pdf.setFontSize(16)
+      pdf.setFont(undefined, 'bold')
 
-    const blob = new Blob([pdfContent], { type: 'text/plain' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.txt`)
-    link.click()
+      // Título
+      const titleWidth = pdf.getStringUnitWidth(reportTitle) * pdf.getFontSize() / pdf.internal.pageSize.getWidth()
+      pdf.text(reportTitle, pageWidth / 2, yPosition, { align: 'center' })
+      yPosition += 12
+
+      // Data e total
+      pdf.setFontSize(10)
+      pdf.setFont(undefined, 'normal')
+      pdf.text(`Data: ${date} | Total de Registros: ${data.length}`, margin, yPosition)
+      yPosition += 8
+
+      // Linha separadora
+      pdf.setDrawColor(0)
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+      yPosition += 6
+
+      // Cabeçalhos da tabela
+      pdf.setFont(undefined, 'bold')
+      pdf.setFontSize(9)
+      const headerLabels = headers.map(h => getHeaderLabel(h))
+      const columnWidth = (pageWidth - 2 * margin) / headers.length
+
+      headerLabels.forEach((label, index) => {
+        pdf.text(label, margin + columnWidth * index + 2, yPosition)
+      })
+      yPosition += 6
+
+      // Linha separadora
+      pdf.setDrawColor(200)
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+      yPosition += 4
+
+      // Dados da tabela
+      pdf.setFont(undefined, 'normal')
+      pdf.setFontSize(8)
+
+      data.forEach((row, rowIndex) => {
+        // Verificar se precisa de nova página
+        if (yPosition > pageHeight - margin - 5) {
+          pdf.addPage()
+          yPosition = margin
+
+          // Repetir cabeçalhos em nova página
+          pdf.setFont(undefined, 'bold')
+          pdf.setFontSize(9)
+          headerLabels.forEach((label, index) => {
+            pdf.text(label, margin + columnWidth * index + 2, yPosition)
+          })
+          yPosition += 6
+          pdf.setDrawColor(200)
+          pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+          yPosition += 4
+          pdf.setFont(undefined, 'normal')
+          pdf.setFontSize(8)
+        }
+
+        // Desenhar células
+        headers.forEach((header, colIndex) => {
+          const value = String(row[header] || '-')
+          const truncated = value.substring(0, 30)
+          pdf.text(truncated, margin + columnWidth * colIndex + 2, yPosition)
+        })
+
+        // Linha separadora entre linhas
+        yPosition += 4
+        pdf.setDrawColor(240)
+        pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+        yPosition += 1
+      })
+
+      // Rodapé
+      yPosition += 4
+      pdf.setDrawColor(0)
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+      yPosition += 5
+
+      pdf.setFont(undefined, 'italic')
+      pdf.setFontSize(8)
+      pdf.text('Relatório gerado automaticamente | Sistema de Gestão de Estoque', pageWidth / 2, yPosition, { align: 'center' })
+
+      // Salvar PDF
+      pdf.save(`${filename}-${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (err) {
+      setError('Erro ao gerar PDF')
+      console.error(err)
+    }
   }
 
   // Efeitos
