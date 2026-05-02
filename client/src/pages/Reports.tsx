@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import jsPDF from 'jspdf'
+import { Workbook } from 'exceljs'
 import {
   FileText, Download, Filter, Package, ArrowUpRight, ArrowDownLeft,
   AlertTriangle, Calendar, Users, RefreshCw
@@ -318,33 +319,118 @@ export default function Reports() {
   }
 
   // Funções de Exportação
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToXLSX = (data: any[], filename: string) => {
     if (data.length === 0) {
       setError('Nenhum dado para exportar')
       return
     }
 
-    const allHeaders = Object.keys(data[0])
-    const headers = getFilteredHeaders(allHeaders)
-    
-    const csvContent = [
-      headers.map(h => getHeaderLabel(h)).join(','),
-      ...data.map(row =>
-        headers.map(header => {
-          const value = row[header]
-          return typeof value === 'string' && value.includes(',')
-            ? `"${value}"`
-            : value
-        }).join(',')
-      )
-    ].join('\n')
+    try {
+      const workbook = new Workbook()
+      const worksheet = workbook.addWorksheet('Relatório')
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.csv`)
-    link.click()
+      const allHeaders = Object.keys(data[0])
+      const headers = getFilteredHeaders(allHeaders)
+      const reportTitle = getReportTitle(filename)
+      const date = new Date().toLocaleDateString('pt-BR')
+      const colCount = headers.length
+
+      let rowNum = 1
+
+      // Título
+      const titleCell = worksheet.getCell(`A${rowNum}`)
+      titleCell.value = reportTitle
+      titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFF' } }
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1F4E78' } }
+      titleCell.alignment = { horizontal: 'center', vertical: 'center' }
+      worksheet.mergeCells(`A${rowNum}:${String.fromCharCode(64 + colCount)}${rowNum}`)
+      worksheet.getRow(rowNum).height = 25
+      rowNum++
+
+      // Espaço
+      rowNum++
+
+      // Data e Total
+      const infoCell = worksheet.getCell(`A${rowNum}`)
+      infoCell.value = `Data: ${date} | Total de Registros: ${data.length}`
+      infoCell.font = { size: 10, italic: true, color: { argb: '666666' } }
+      infoCell.alignment = { horizontal: 'left' }
+      worksheet.mergeCells(`A${rowNum}:${String.fromCharCode(64 + colCount)}${rowNum}`)
+      rowNum++
+
+      rowNum++
+
+      // Cabeçalhos
+      const headerRow = worksheet.getRow(rowNum)
+      headers.forEach((header, index) => {
+        const cell = headerRow.getCell(index + 1)
+        cell.value = getHeaderLabel(header)
+        cell.font = { bold: true, size: 11, color: { argb: 'FFFFFF' } }
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4472C4' } }
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true }
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } }
+        }
+      })
+      worksheet.getRow(rowNum).height = 20
+      rowNum++
+
+      // Dados
+      data.forEach((row, dataRowIndex) => {
+        const dataRow = worksheet.getRow(rowNum)
+        const bgColor = dataRowIndex % 2 === 0 ? 'F2F2F2' : 'FFFFFF'
+        
+        headers.forEach((header, colIndex) => {
+          const cell = dataRow.getCell(colIndex + 1)
+          const value = row[header]
+          cell.value = value || '-'
+          cell.alignment = { horizontal: 'left', vertical: 'center', wrapText: true }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'CCCCCC' } },
+            left: { style: 'thin', color: { argb: 'CCCCCC' } },
+            bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
+            right: { style: 'thin', color: { argb: 'CCCCCC' } }
+          }
+        })
+        worksheet.getRow(rowNum).height = 18
+        rowNum++
+      })
+
+      // Rodapé
+      rowNum++
+      const footerCell = worksheet.getCell(`A${rowNum}`)
+      footerCell.value = 'Relatório gerado automaticamente | Sistema de Gestão de Estoque'
+      footerCell.font = { size: 9, italic: true, color: { argb: '666666' } }
+      footerCell.alignment = { horizontal: 'center' }
+      worksheet.mergeCells(`A${rowNum}:${String.fromCharCode(64 + colCount)}${rowNum}`)
+
+      // Ajustar largura das colunas
+      headers.forEach((header, index) => {
+        const maxLength = Math.max(
+          getHeaderLabel(header).length,
+          Math.max(...data.map(row => String(row[header] || '').length))
+        )
+        worksheet.getColumn(index + 1).width = Math.min(maxLength + 2, 30)
+      })
+
+      // Salvar arquivo
+      const fileName = `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.setAttribute('href', url)
+        link.setAttribute('download', fileName)
+        link.click()
+      })
+    } catch (err) {
+      setError('Erro ao gerar Excel')
+      console.error(err)
+    }
   }
 
   const exportToPDF = (data: any[], filename: string) => {
@@ -545,10 +631,10 @@ export default function Reports() {
                       <RefreshCw size={16} />
                     </button>
                     <button
-                      onClick={() => exportToCSV(produtosData, 'relatorio-produtos')}
+                      onClick={() => exportToXLSX(produtosData, 'relatorio-produtos')}
                       className="reports-report__btn reports-report__btn--export"
                     >
-                      <Download size={16} /> CSV
+                      <Download size={16} /> Excel
                     </button>
                     <button
                       onClick={() => exportToPDF(produtosData, 'relatorio-produtos')}
@@ -617,10 +703,10 @@ export default function Reports() {
                       <RefreshCw size={16} />
                     </button>
                     <button
-                      onClick={() => exportToCSV(movimentacoesData, 'relatorio-movimentacoes')}
+                      onClick={() => exportToXLSX(movimentacoesData, 'relatorio-movimentacoes')}
                       className="reports-report__btn reports-report__btn--export"
                     >
-                      <Download size={16} /> CSV
+                      <Download size={16} /> Excel
                     </button>
                     <button
                       onClick={() => exportToPDF(movimentacoesData, 'relatorio-movimentacoes')}
@@ -694,10 +780,10 @@ export default function Reports() {
                       <RefreshCw size={16} />
                     </button>
                     <button
-                      onClick={() => exportToCSV(estoqueCriticoData, 'relatorio-estoque-critico')}
+                      onClick={() => exportToXLSX(estoqueCriticoData, 'relatorio-estoque-critico')}
                       className="reports-report__btn reports-report__btn--export"
                     >
-                      <Download size={16} /> CSV
+                      <Download size={16} /> Excel
                     </button>
                     <button
                       onClick={() => exportToPDF(estoqueCriticoData, 'relatorio-estoque-critico')}
@@ -738,10 +824,10 @@ export default function Reports() {
                       <RefreshCw size={16} />
                     </button>
                     <button
-                      onClick={() => exportToCSV(vencimentoData, 'relatorio-vencimento')}
+                      onClick={() => exportToXLSX(vencimentoData, 'relatorio-vencimento')}
                       className="reports-report__btn reports-report__btn--export"
                     >
-                      <Download size={16} /> CSV
+                      <Download size={16} /> Excel
                     </button>
                     <button
                       onClick={() => exportToPDF(vencimentoData, 'relatorio-vencimento')}
@@ -795,10 +881,10 @@ export default function Reports() {
                       <RefreshCw size={16} />
                     </button>
                     <button
-                      onClick={() => exportToCSV(usuariosData, 'relatorio-usuarios')}
+                      onClick={() => exportToXLSX(usuariosData, 'relatorio-usuarios')}
                       className="reports-report__btn reports-report__btn--export"
                     >
-                      <Download size={16} /> CSV
+                      <Download size={16} /> Excel
                     </button>
                     <button
                       onClick={() => exportToPDF(usuariosData, 'relatorio-usuarios')}
