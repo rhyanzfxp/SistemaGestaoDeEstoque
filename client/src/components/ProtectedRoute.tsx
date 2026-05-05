@@ -12,8 +12,8 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">Carregando...</div>
+      <div className="protected-route-loading">
+        <div className="protected-route-loading__text">Carregando...</div>
       </div>
     )
   }
