@@ -156,19 +156,9 @@ export default function Categories() {
 
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        width: '100%',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%)',
-        gap: '16px',
-        color: '#64748b'
-      }}>
+      <div className="categories-loading">
         <style>{productsStyles}</style>
-        <RefreshCw size={32} color="#3b82f6" className="products-spinner" />
+        <RefreshCw size={32} className="categories-spinner" />
         <p>Carregando categorias...</p>
       </div>
     );
@@ -292,27 +282,25 @@ export default function Categories() {
 
         {showDeleteModal && (
           <div className="products-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-            <div className="products-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="products-modal products-modal--delete" onClick={e => e.stopPropagation()}>
               <div className="products-modal__header">
                 <h2>Confirmar Exclusão</h2>
                 <button onClick={() => setShowDeleteModal(false)} className="products-modal__close"><X size={20} /></button>
               </div>
               <div className="products-form">
-                <p style={{ marginBottom: '20px', color: '#64748b' }}>
+                <p className="products-modal__text">
                   Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.
                 </p>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="products-modal__actions">
                   <button
                     onClick={() => setShowDeleteModal(false)}
                     className="products-btn-cancel"
-                    style={{ flex: 1 }}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="products-btn-submit"
-                    style={{ flex: 1, background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}
+                    className="products-btn-submit products-btn-submit--danger"
                   >
                     Excluir
                   </button>
@@ -332,11 +320,29 @@ const productsStyles = `
   .products-root {
     flex: 1;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%);
+    background: var(--bg-page);
     position: relative;
     overflow-x: hidden;
     font-family: 'DM Sans', sans-serif;
     padding: 36px 28px;
+  }
+
+  .categories-loading {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--bg-page);
+    gap: 16px;
+    color: var(--text-secondary);
+  }
+
+  .categories-spinner {
+    animation: products-spin 1.1s linear infinite;
+    color: var(--accent-primary);
   }
 
   .products-loading {
@@ -346,13 +352,14 @@ const productsStyles = `
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%);
+    background: var(--bg-page);
     gap: 16px;
-    color: #64748b;
+    color: var(--text-secondary);
   }
 
   .products-spinner {
     animation: products-spin 1.1s linear infinite;
+    color: var(--accent-primary);
   }
 
   @keyframes products-spin {
@@ -372,14 +379,14 @@ const productsStyles = `
     font-family: 'Sora', sans-serif;
     font-size: 28px;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-primary);
     letter-spacing: -0.02em;
     margin-bottom: 8px;
   }
 
   .products-subtitle {
     font-size: 14px;
-    color: #64748b;
+    color: var(--text-secondary);
   }
 
   .products-btn-create {
@@ -434,11 +441,11 @@ const productsStyles = `
   }
 
   .products-table-wrapper {
-    background: #ffffff;
-    border: 1px solid rgba(59, 130, 246, 0.15);
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-card);
     margin-bottom: 24px;
   }
 
@@ -448,8 +455,8 @@ const productsStyles = `
   }
 
   .products-table thead {
-    background: rgba(59, 130, 246, 0.08);
-    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-card);
   }
 
   .products-table th {
@@ -457,37 +464,37 @@ const productsStyles = `
     text-align: left;
     font-size: 12px;
     font-weight: 700;
-    color: #475569;
+    color: var(--text-secondary);
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
   .products-table__row {
-    border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+    border-bottom: 1px solid var(--border-card);
     transition: background 0.15s;
   }
 
   .products-table__row:hover {
-    background: rgba(59, 130, 246, 0.04);
+    background: var(--bg-hover);
   }
 
   .products-table__cell {
     padding: 16px 18px;
     font-size: 14px;
-    color: #0f172a;
+    color: var(--text-primary);
   }
 
   .products-name {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--text-primary);
   }
 
   .products-categoria {
     font-size: 13px;
     padding: 4px 10px;
-    background: rgba(59, 130, 246, 0.12);
+    background: var(--bg-active);
     border-radius: 6px;
-    color: #1e40af;
+    color: var(--text-link-active);
   }
 
   .products-actions {
@@ -514,12 +521,12 @@ const productsStyles = `
   }
 
   .products-action-btn--edit {
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563eb;
+    background: var(--bg-active);
+    color: var(--accent-primary);
   }
 
   .products-action-btn--edit:hover:not(:disabled) {
-    background: rgba(59, 130, 246, 0.2);
+    background: var(--bg-hover);
   }
 
   .products-action-btn--delete {
@@ -543,13 +550,13 @@ const productsStyles = `
   .products-empty-title {
     font-size: 16px;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-secondary);
     margin-top: 16px;
   }
 
   .products-empty-sub {
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--text-muted);
   }
 
   .products-modal-overlay {
@@ -572,7 +579,7 @@ const productsStyles = `
   }
 
   .products-modal {
-    background: #ffffff;
+    background: var(--bg-card);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     max-width: 600px;
@@ -592,14 +599,14 @@ const productsStyles = `
     justify-content: space-between;
     align-items: center;
     padding: 24px;
-    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    border-bottom: 1px solid var(--border-card);
   }
 
   .products-modal__header h2 {
     font-family: 'Sora', sans-serif;
     font-size: 20px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-primary);
   }
 
   .products-modal__close {
@@ -613,11 +620,11 @@ const productsStyles = `
     justify-content: center;
     border-radius: 8px;
     transition: background 0.15s;
-    color: #64748b;
+    color: var(--text-secondary);
   }
 
   .products-modal__close:hover {
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--bg-hover);
   }
 
   .products-form {
@@ -642,24 +649,24 @@ const productsStyles = `
   .products-form__group label {
     font-size: 14px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--text-primary);
   }
 
   .products-input {
     padding: 11px 14px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid var(--border-input);
     border-radius: 10px;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    color: #0f172a;
+    color: var(--text-primary);
     transition: border-color 0.15s, background 0.15s;
-    background: #f8fafc;
+    background: var(--bg-input);
   }
 
   .products-input:focus {
     outline: none;
-    border-color: #2563eb;
-    background: #ffffff;
+    border-color: var(--accent-primary);
+    background: var(--bg-card);
   }
 
   .products-form__actions {
@@ -671,10 +678,10 @@ const productsStyles = `
   .products-btn-cancel {
     flex: 1;
     padding: 11px 16px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid var(--border-card);
     border-radius: 10px;
     background: transparent;
-    color: #475569;
+    color: var(--text-secondary);
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 600;
@@ -702,6 +709,30 @@ const productsStyles = `
 
   .products-btn-submit:hover {
     opacity: 0.88;
+  }
+
+  .products-btn-submit--danger {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  }
+
+  .products-modal--delete {
+    max-width: 400px;
+  }
+
+  .products-modal__text {
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .products-modal__actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .products-modal__actions .products-btn-cancel,
+  .products-modal__actions .products-btn-submit {
+    flex: 1;
   }
 
   @media (max-width: 640px) {

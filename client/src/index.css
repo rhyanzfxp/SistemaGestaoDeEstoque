@@ -459,3 +459,237 @@ html.dark .users-denied-content h2 {
 html.dark .users-denied-content p {
   color: var(--text-secondary) !important;
 }
+
+/* ─── REPORTS PAGE DARK MODE ─────────────────────────────── */
+html.dark .reports-root {
+  background: var(--bg-page) !important;
+}
+
+html.dark .reports-panel,
+html.dark .reports-menu-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .reports-menu-item:hover:not(.reports-menu-item--disabled) {
+  background: var(--bg-hover) !important;
+  border-color: var(--accent-primary) !important;
+}
+
+html.dark .reports-menu-item--active {
+  background: var(--bg-active) !important;
+  border-color: var(--accent-primary) !important;
+}
+
+html.dark .reports-menu-item__icon {
+  color: var(--accent-primary) !important;
+}
+
+html.dark .reports-menu-item__label,
+html.dark .reports-header__title,
+html.dark .reports-report__header h2 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .reports-menu-item__description,
+html.dark .reports-header__subtitle,
+html.dark .reports-filter-group label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .reports-report__header {
+  border-color: var(--border-card) !important;
+}
+
+html.dark .reports-report__btn--refresh {
+  background: var(--bg-active) !important;
+  color: var(--accent-primary) !important;
+}
+
+html.dark .reports-filters {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .reports-filter-group input,
+html.dark .reports-filter-group select {
+  background: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .reports-table thead {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .reports-table th {
+  color: var(--text-secondary) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .reports-table td {
+  color: var(--text-primary) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .reports-table tbody tr:hover {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .reports-table-loading__spinner {
+  color: var(--accent-primary) !important;
+}
+
+html.dark .reports-table-loading p,
+html.dark .reports-table-empty p {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .reports-error {
+  background: rgba(239,68,68,0.15) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+}
+
+/* ─── LOADING STATES DARK MODE ─────────────────────────────── */
+html.dark .products-loading,
+html.dark .users-loading,
+html.dark .categories-loading {
+  background: var(--bg-page) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .products-loading p,
+html.dark .users-loading p,
+html.dark .categories-loading p {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .products-spinner,
+html.dark .users-spinner,
+html.dark .categories-spinner {
+  color: var(--accent-primary) !important;
+}
+
+html.dark .profile-loading {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .profile-loading__spinner {
+  color: var(--accent-primary) !important;
+}
+
+html.dark .profile-loading p {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-loading {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-loading p {
+  color: var(--text-secondary) !important;
+}
+
+/* ─── ALERTAS PAGE DARK MODE ─────────────────────────────── */
+html.dark .al-root {
+  background: var(--bg-page) !important;
+}
+
+html.dark .al-header__title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .al-header__subtitle {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-btn--ghost {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-btn--ghost:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .al-filters__tabs {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+html.dark .al-filter-tab {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-filter-tab:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .al-filter-tab--active {
+  background: var(--bg-active) !important;
+  color: var(--text-link-active) !important;
+}
+
+html.dark .al-count-badge {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+  color: var(--text-link-active) !important;
+}
+
+html.dark .al-loading {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .al-empty__icon {
+  background: var(--accent-faint) !important;
+  border-color: var(--border-card) !important;
+}
+
+/* ─── PROTECTED ROUTE LOADING ─────────────────────────────── */
+.protected-route-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+.protected-route-loading__text {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ─── PROFILE PAGE ADDITIONAL DARK MODE ─────────────────────────────── */
+html.dark .profile-avatar-btn--upload {
+  background: rgba(99,102,241,0.15) !important;
+  color: var(--accent-hover) !important;
+}
+
+html.dark .profile-avatar-btn--upload:hover:not(:disabled) {
+  background: rgba(99,102,241,0.25) !important;
+}
+
+html.dark .profile-avatar-btn--remove {
+  background: rgba(239,68,68,0.15) !important;
+  color: #f87171 !important;
+}
+
+html.dark .profile-avatar-btn--remove:hover:not(:disabled) {
+  background: rgba(239,68,68,0.25) !important;
+}
+
+html.dark .profile-refresh-btn {
+  background: var(--bg-active) !important;
+  color: var(--accent-primary) !important;
+}
+
+html.dark .profile-refresh-btn:hover {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .profile-security-divider {
+  background: var(--border-card) !important;
+}
