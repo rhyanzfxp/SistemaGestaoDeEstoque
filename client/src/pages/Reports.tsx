@@ -64,7 +64,8 @@ export default function Reports() {
 
   // Produtos
   const [produtosData, setProdutosData] = useState<ProductsReportData[]>([])
-  const [produtosFiltros, setProdutosFiltros] = useState({ categoria: '', status: '' })
+  const [categorias, setCategorias] = useState<any[]>([])
+  const [produtosFiltros, setProdutosFiltros] = useState({ categoria_id: '', status: '' })
 
   // Movimentações
   const [movimentacoesData, setMovimentacoesData] = useState<MovimentacoesReportData[]>([])
@@ -127,12 +128,26 @@ export default function Reports() {
   ]
 
   // Funções de Fetch
+  const fetchCategorias = async () => {
+    try {
+      const response = await fetch('/api/categories', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setCategorias(result || [])
+      }
+    } catch (err) {
+      console.error('Erro ao buscar categorias:', err)
+    }
+  }
+
   const fetchProdutos = async () => {
     setIsLoading(true)
     setError('')
     try {
       const params = new URLSearchParams()
-      if (produtosFiltros.categoria) params.set('categoria_id', produtosFiltros.categoria)
+      if (produtosFiltros.categoria_id) params.set('categoria_id', produtosFiltros.categoria_id)
       if (produtosFiltros.status) params.set('status', produtosFiltros.status)
       params.set('limit', '1000')
 
@@ -545,6 +560,12 @@ export default function Reports() {
 
   // Efeitos
   useEffect(() => {
+    if (activeTab === 'produtos') {
+      fetchCategorias()
+    }
+  }, [activeTab, token])
+
+  useEffect(() => {
     switch (activeTab) {
       case 'produtos':
         fetchProdutos()
@@ -649,13 +670,16 @@ export default function Reports() {
                 <div className="reports-filters">
                   <div className="reports-filter-group">
                     <label>Categoria</label>
-                    <input
-                      type="text"
-                      placeholder="Filtrar por categoria"
-                      value={produtosFiltros.categoria}
-                      onChange={(e) => setProdutosFiltros({ ...produtosFiltros, categoria: e.target.value })}
-                      onKeyUp={() => fetchProdutos()}
-                    />
+                    <select
+                      value={produtosFiltros.categoria_id}
+                      onChange={(e) => setProdutosFiltros({ ...produtosFiltros, categoria_id: e.target.value })}
+                      onChangeCapture={() => fetchProdutos()}
+                    >
+                      <option value="">Todas as categorias</option>
+                      {categorias.map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="reports-filter-group">
                     <label>Status</label>
