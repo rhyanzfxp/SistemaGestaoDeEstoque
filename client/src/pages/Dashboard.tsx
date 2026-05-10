@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRealtime } from '../hooks/useRealtime'
+import GraficoMovimentacoes from '../components/GraficoMovimentacoes'
 
 interface DashboardData {
   totalProdutos: number
@@ -222,6 +223,8 @@ export default function Dashboard() {
               </button>
             </section>
           )}
+
+          <GraficoMovimentacoes token={token!} />
 
           <section className="db-mov">
             <div className="db-mov__header">
