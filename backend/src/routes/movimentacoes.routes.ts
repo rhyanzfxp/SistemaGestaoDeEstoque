@@ -23,7 +23,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       .select(`
         *,
         usuario:usuarios(nome),
-        produto:produtos(nome, categoria_id, categorias(nome))
+        produto:produtos(codigo, nome, categoria_id, categorias(nome))
       `, { count: 'exact' })
 
     if (tipo) {
@@ -56,6 +56,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       id: mov.id,
       tipo: mov.tipo,
       produto_id: mov.produto_id,
+      produto_codigo: mov.produto?.codigo || '-',
       produto_nome: mov.produto_nome,
       categoria_nome: mov.produto?.categorias?.nome || '-',
       quantidade: mov.quantidade,

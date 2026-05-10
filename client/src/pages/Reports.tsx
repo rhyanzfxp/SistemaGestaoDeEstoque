@@ -54,7 +54,15 @@ interface VencimentoData {
   quantidade: number
 }
 
-type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'usuarios'
+interface VolumenSaidaData {
+  id: string
+  codigo: string
+  nome: string
+  categoria: string
+  total_saidas: number
+}
+
+type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'volume-saida' | 'usuarios'
 
 export default function Reports() {
   const { user, token } = useAuth()
@@ -86,6 +94,13 @@ export default function Reports() {
 
   // Usuários
   const [usuariosData, setUsuariosData] = useState<any[]>([])
+
+  // Volume de Saída
+  const [volumenSaidaData, setVolumenSaidaData] = useState<VolumenSaidaData[]>([])
+  const [volumenSaidaFiltros, setVolumenSaidaFiltros] = useState({
+    data_inicio: '',
+    data_fim: ''
+  })
 
   const isAdmin = user?.perfil === 'ADMIN'
 
@@ -124,6 +139,13 @@ export default function Reports() {
       description: 'Gerenciamento de usuários do sistema',
       icon: <Users size={20} />,
       requiredRole: 'ADMIN'
+    },
+    {
+      id: 'volume-saida',
+      label: 'Produtos Mais Utilizados',
+      description: 'Produtos com maior volume de saída em um período',
+      icon: <ArrowDownLeft size={20} />,
+      requiredRole: 'GESTAO'
     }
   ]
 
@@ -296,6 +318,52 @@ export default function Reports() {
     }
   }
 
+  const fetchVolumenSaida = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const params = new URLSearchParams()
+      params.set('tipo', 'SAIDA')
+      params.set('limit', '1000')
+      if (volumenSaidaFiltros.data_inicio) params.set('data_inicio', volumenSaidaFiltros.data_inicio)
+      if (volumenSaidaFiltros.data_fim) params.set('data_fim', volumenSaidaFiltros.data_fim)
+
+      const response = await fetch(`/api/movimentacoes?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (!response.ok) throw new Error('Erro ao carregar movimentações')
+
+      const result = await response.json()
+      const movimentacoes = result.data || []
+
+      // Agrupar por produto e somar as saídas
+      const agrupado: Record<string, any> = {}
+
+      movimentacoes.forEach((mov: any) => {
+        const key = mov.produto_id
+        if (!agrupado[key]) {
+          agrupado[key] = {
+            id: mov.produto_id,
+            codigo: mov.produto_codigo || '-',
+            nome: mov.produto_nome || '-',
+            categoria: mov.categoria_nome || '-',
+            total_saidas: 0
+          }
+        }
+        agrupado[key].total_saidas += mov.quantidade || 0
+      })
+
+      // Converter para array e ordenar decrescente por volume
+      const dados = Object.values(agrupado).sort((a: any, b: any) => b.total_saidas - a.total_saidas)
+      setVolumenSaidaData(dados)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Funções auxiliares para exportação
   const getFilteredHeaders = (headers: string[]) => {
     return headers.filter(h => !['id', 'codigo', 'created_at', 'updated_at'].includes(h))
@@ -328,7 +396,8 @@ export default function Reports() {
       'relatorio-movimentacoes': 'RELATÓRIO DE MOVIMENTAÇÕES',
       'relatorio-estoque-critico': 'RELATÓRIO DE ESTOQUE CRÍTICO',
       'relatorio-vencimento': 'RELATÓRIO DE PRÓXIMOS VENCIMENTOS',
-      'relatorio-usuarios': 'RELATÓRIO DE USUÁRIOS'
+      'relatorio-usuarios': 'RELATÓRIO DE USUÁRIOS',
+      'relatorio-volume-saida': 'RELATÓRIO DE PRODUTOS MAIS UTILIZADOS'
     }
     return titles[filename] || filename.toUpperCase()
   }
@@ -581,6 +650,9 @@ export default function Reports() {
         break
       case 'usuarios':
         fetchUsuarios()
+        break
+      case 'volume-saida':
+        fetchVolumenSaida()
         break
     }
   }, [activeTab])
@@ -928,6 +1000,70 @@ export default function Reports() {
                     email: 'E-mail',
                     perfil: 'Perfil',
                     ativo: 'Status'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Volume de Saída Report */}
+            {activeTab === 'volume-saida' && (
+              <div className="reports-report">
+                <div className="reports-report__header">
+                  <h2>Relatório de Produtos Mais Utilizados</h2>
+                  <div className="reports-report__actions">
+                    <button
+                      onClick={() => fetchVolumenSaida()}
+                      className="reports-report__btn reports-report__btn--refresh"
+                      title="Atualizar"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                    <button
+                      onClick={() => exportToXLSX(volumenSaidaData, 'relatorio-volume-saida')}
+                      className="reports-report__btn reports-report__btn--export"
+                    >
+                      <Download size={16} /> Excel
+                    </button>
+                    <button
+                      onClick={() => exportToPDF(volumenSaidaData, 'relatorio-volume-saida')}
+                      className="reports-report__btn reports-report__btn--export"
+                    >
+                      <Download size={16} /> PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtros */}
+                <div className="reports-filters">
+                  <div className="reports-filter-group">
+                    <label>Data Inicial</label>
+                    <input
+                      type="date"
+                      value={volumenSaidaFiltros.data_inicio}
+                      onChange={(e) => setVolumenSaidaFiltros({ ...volumenSaidaFiltros, data_inicio: e.target.value })}
+                      onChangeCapture={() => fetchVolumenSaida()}
+                    />
+                  </div>
+                  <div className="reports-filter-group">
+                    <label>Data Final</label>
+                    <input
+                      type="date"
+                      value={volumenSaidaFiltros.data_fim}
+                      onChange={(e) => setVolumenSaidaFiltros({ ...volumenSaidaFiltros, data_fim: e.target.value })}
+                      onChangeCapture={() => fetchVolumenSaida()}
+                    />
+                  </div>
+                </div>
+
+                <ReportTable
+                  data={volumenSaidaData}
+                  isLoading={isLoading}
+                  columns={['codigo', 'nome', 'categoria', 'total_saidas']}
+                  columnLabels={{
+                    codigo: 'Código',
+                    nome: 'Produto',
+                    categoria: 'Categoria',
+                    total_saidas: 'Total de Saídas'
                   }}
                 />
               </div>
