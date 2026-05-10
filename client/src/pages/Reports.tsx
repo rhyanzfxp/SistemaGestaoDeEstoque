@@ -23,7 +23,6 @@ interface ProductsReportData {
   quantidade: number
   estoque_minimo: number
   status: 'crítico' | 'normal'
-  fornecedor: string
 }
 
 interface MovimentacoesReportData {
@@ -62,7 +61,14 @@ interface VolumenSaidaData {
   total_saidas: number
 }
 
-type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'volume-saida' | 'usuarios'
+interface MovimentacaoPorCategoriaData {
+  categoria: string
+  total_entradas: number
+  total_saidas: number
+  saldo: number
+}
+
+type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'volume-saida' | 'mov-categoria' | 'usuarios'
 
 export default function Reports() {
   const { user, token } = useAuth()
@@ -98,6 +104,14 @@ export default function Reports() {
   // Volume de Saída
   const [volumenSaidaData, setVolumenSaidaData] = useState<VolumenSaidaData[]>([])
   const [volumenSaidaFiltros, setVolumenSaidaFiltros] = useState({
+    data_inicio: '',
+    data_fim: ''
+  })
+
+  // Movimentações por Categoria
+  const [movCategoriasData, setMovCategoriasData] = useState<MovimentacaoPorCategoriaData[]>([])
+  const [movCategoriasFiltros, setMovCategoriasFiltros] = useState({
+    categoria_id: '',
     data_inicio: '',
     data_fim: ''
   })
@@ -146,6 +160,13 @@ export default function Reports() {
       description: 'Produtos com maior volume de saída em um período',
       icon: <ArrowDownLeft size={20} />,
       requiredRole: 'GESTAO'
+    },
+    {
+      id: 'mov-categoria',
+      label: 'Movimentações por Categoria',
+      description: 'Entradas, saídas e saldo agrupado por categoria',
+      icon: <Package size={20} />,
+      requiredRole: 'GESTAO'
     }
   ]
 
@@ -187,8 +208,7 @@ export default function Reports() {
         categoria: p.categoria_nome || '-',
         quantidade: p.quantidade_atual,
         estoque_minimo: p.estoque_minimo,
-        status: p.quantidade_atual <= p.estoque_minimo ? 'crítico' : 'normal',
-        fornecedor: p.fornecedor_nome || '-'
+        status: p.quantidade_atual <= p.estoque_minimo ? 'crítico' : 'normal'
       })) || []
       setProdutosData(formatted)
     } catch (err: any) {
@@ -364,6 +384,69 @@ export default function Reports() {
     }
   }
 
+  const fetchMovimentacoesPorCategoria = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const params = new URLSearchParams()
+      params.set('limit', '1000')
+      if (movCategoriasFiltros.data_inicio) params.set('data_inicio', movCategoriasFiltros.data_inicio)
+      if (movCategoriasFiltros.data_fim) params.set('data_fim', movCategoriasFiltros.data_fim)
+
+      const response = await fetch(`/api/movimentacoes?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (!response.ok) throw new Error('Erro ao carregar movimentações')
+
+      const result = await response.json()
+      let movimentacoes = result.data || []
+
+      // Filtrar por categoria se selecionada
+      if (movCategoriasFiltros.categoria_id) {
+        // Encontrar a categoria selecionada para poder comparar
+        const categoriaSelecionada = categorias.find(c => c.id === movCategoriasFiltros.categoria_id)
+        if (categoriaSelecionada) {
+          movimentacoes = movimentacoes.filter(mov => mov.categoria_nome === categoriaSelecionada.nome)
+        }
+      }
+
+      // Agrupar por categoria e separar entradas/saídas
+      const agrupado: Record<string, any> = {}
+
+      movimentacoes.forEach((mov: any) => {
+        const categoria = mov.categoria_nome || 'Sem categoria'
+
+        if (!agrupado[categoria]) {
+          agrupado[categoria] = {
+            categoria,
+            total_entradas: 0,
+            total_saidas: 0,
+            saldo: 0
+          }
+        }
+
+        if (mov.tipo === 'ENTRADA') {
+          agrupado[categoria].total_entradas += mov.quantidade || 0
+        } else if (mov.tipo === 'SAIDA') {
+          agrupado[categoria].total_saidas += mov.quantidade || 0
+        }
+      })
+
+      // Calcular saldo e converter para array
+      const dados = Object.values(agrupado).map((cat: any) => ({
+        ...cat,
+        saldo: cat.total_entradas - cat.total_saidas
+      }))
+
+      setMovCategoriasData(dados)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Funções auxiliares para exportação
   const getFilteredHeaders = (headers: string[]) => {
     return headers.filter(h => !['id', 'codigo', 'created_at', 'updated_at'].includes(h))
@@ -376,7 +459,6 @@ export default function Reports() {
       quantidade: 'Quantidade',
       estoque_minimo: 'Estoque Mínimo',
       status: 'Status',
-      fornecedor: 'Fornecedor',
       ativo: 'Status',
       tipo: 'Tipo',
       produto: 'Produto',
@@ -397,7 +479,8 @@ export default function Reports() {
       'relatorio-estoque-critico': 'RELATÓRIO DE ESTOQUE CRÍTICO',
       'relatorio-vencimento': 'RELATÓRIO DE PRÓXIMOS VENCIMENTOS',
       'relatorio-usuarios': 'RELATÓRIO DE USUÁRIOS',
-      'relatorio-volume-saida': 'RELATÓRIO DE PRODUTOS MAIS UTILIZADOS'
+      'relatorio-volume-saida': 'RELATÓRIO DE PRODUTOS MAIS UTILIZADOS',
+      'relatorio-mov-categoria': 'RELATÓRIO DE MOVIMENTAÇÕES POR CATEGORIA'
     }
     return titles[filename] || filename.toUpperCase()
   }
@@ -654,8 +737,46 @@ export default function Reports() {
       case 'volume-saida':
         fetchVolumenSaida()
         break
+      case 'mov-categoria':
+        fetchMovimentacoesPorCategoria()
+        break
     }
   }, [activeTab])
+
+  // Quando filtros de mov-categoria mudam, atualizar dados
+  useEffect(() => {
+    if (activeTab === 'mov-categoria') {
+      fetchMovimentacoesPorCategoria()
+    }
+  }, [movCategoriasFiltros.categoria_id, movCategoriasFiltros.data_inicio, movCategoriasFiltros.data_fim])
+
+  // Quando filtros de produtos mudam, atualizar dados
+  useEffect(() => {
+    if (activeTab === 'produtos') {
+      fetchProdutos()
+    }
+  }, [produtosFiltros.categoria_id, produtosFiltros.status])
+
+  // Quando filtros de movimentações mudam, atualizar dados
+  useEffect(() => {
+    if (activeTab === 'movimentacoes') {
+      fetchMovimentacoes()
+    }
+  }, [movimentacoesFiltros.tipo, movimentacoesFiltros.data_inicio, movimentacoesFiltros.data_fim])
+
+  // Quando filtros de volume-saida mudam, atualizar dados
+  useEffect(() => {
+    if (activeTab === 'volume-saida') {
+      fetchVolumenSaida()
+    }
+  }, [volumenSaidaFiltros.data_inicio, volumenSaidaFiltros.data_fim])
+
+  // Quando filtros de vencimento mudam, atualizar dados
+  useEffect(() => {
+    if (activeTab === 'vencimento') {
+      fetchVencimento()
+    }
+  }, [vencimentoFiltros.dias])
 
   const handleTabChange = (tab: ReportTab) => {
     if (tab === 'usuarios' && !isAdmin) return
@@ -771,15 +892,14 @@ export default function Reports() {
                 <ReportTable
                   data={produtosData}
                   isLoading={isLoading}
-                  columns={['codigo', 'nome', 'categoria', 'quantidade', 'estoque_minimo', 'status', 'fornecedor']}
+                  columns={['codigo', 'nome', 'categoria', 'quantidade', 'estoque_minimo', 'status']}
                   columnLabels={{
                     codigo: 'Código',
                     nome: 'Nome',
                     categoria: 'Categoria',
                     quantidade: 'Quantidade',
                     estoque_minimo: 'Mínimo',
-                    status: 'Status',
-                    fornecedor: 'Fornecedor'
+                    status: 'Status'
                   }}
                 />
               </div>
@@ -1064,6 +1184,80 @@ export default function Reports() {
                     nome: 'Produto',
                     categoria: 'Categoria',
                     total_saidas: 'Total de Saídas'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Movimentações por Categoria Report */}
+            {activeTab === 'mov-categoria' && (
+              <div className="reports-report">
+                <div className="reports-report__header">
+                  <h2>Relatório de Movimentações por Categoria</h2>
+                  <div className="reports-report__actions">
+                    <button
+                      onClick={() => fetchMovimentacoesPorCategoria()}
+                      className="reports-report__btn reports-report__btn--refresh"
+                      title="Atualizar"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                    <button
+                      onClick={() => exportToXLSX(movCategoriasData, 'relatorio-mov-categoria')}
+                      className="reports-report__btn reports-report__btn--export"
+                    >
+                      <Download size={16} /> Excel
+                    </button>
+                    <button
+                      onClick={() => exportToPDF(movCategoriasData, 'relatorio-mov-categoria')}
+                      className="reports-report__btn reports-report__btn--export"
+                    >
+                      <Download size={16} /> PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtros */}
+                <div className="reports-filters">
+                  <div className="reports-filter-group">
+                    <label>Categoria</label>
+                    <select
+                      value={movCategoriasFiltros.categoria_id}
+                      onChange={(e) => setMovCategoriasFiltros({ ...movCategoriasFiltros, categoria_id: e.target.value })}
+                    >
+                      <option value="">Todas as categorias</option>
+                      {categorias.map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="reports-filter-group">
+                    <label>Data Inicial</label>
+                    <input
+                      type="date"
+                      value={movCategoriasFiltros.data_inicio}
+                      onChange={(e) => setMovCategoriasFiltros({ ...movCategoriasFiltros, data_inicio: e.target.value })}
+                    />
+                  </div>
+                  <div className="reports-filter-group">
+                    <label>Data Final</label>
+                    <input
+                      type="date"
+                      value={movCategoriasFiltros.data_fim}
+                      onChange={(e) => setMovCategoriasFiltros({ ...movCategoriasFiltros, data_fim: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <ReportTable
+                  data={movCategoriasData}
+                  isLoading={isLoading}
+                  columns={['categoria', 'total_entradas', 'total_saidas', 'saldo']}
+                  columnLabels={{
+                    categoria: 'Categoria',
+                    total_entradas: 'Total de Entradas',
+                    total_saidas: 'Total de Saídas',
+                    saldo: 'Saldo'
                   }}
                 />
               </div>
