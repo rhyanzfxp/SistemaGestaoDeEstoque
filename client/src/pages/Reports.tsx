@@ -68,7 +68,7 @@ interface MovimentacaoPorCategoriaData {
   saldo: number
 }
 
-type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'volume-saida' | 'mov-categoria' | 'usuarios'
+type ReportTab = 'produtos' | 'movimentacoes' | 'estoque-critico' | 'vencimento' | 'volume-saida' | 'mov-categoria'
 
 export default function Reports() {
   const { user, token } = useAuth()
@@ -97,9 +97,6 @@ export default function Reports() {
   const [vencimentoFiltros, setVencimentoFiltros] = useState({
     dias: '15'
   })
-
-  // Usuários
-  const [usuariosData, setUsuariosData] = useState<any[]>([])
 
   // Volume de Saída
   const [volumenSaidaData, setVolumenSaidaData] = useState<VolumenSaidaData[]>([])
@@ -146,13 +143,6 @@ export default function Reports() {
       description: 'Produtos próximos de vencer',
       icon: <Calendar size={20} />,
       requiredRole: 'GESTAO'
-    },
-    {
-      id: 'usuarios',
-      label: 'Usuários',
-      description: 'Gerenciamento de usuários do sistema',
-      icon: <Users size={20} />,
-      requiredRole: 'ADMIN'
     },
     {
       id: 'volume-saida',
@@ -319,25 +309,6 @@ export default function Reports() {
     }
   }
 
-  const fetchUsuarios = async () => {
-    setIsLoading(true)
-    setError('')
-    try {
-      const response = await fetch('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      if (!response.ok) throw new Error('Erro ao carregar usuários')
-
-      const result = await response.json()
-      setUsuariosData(result || [])
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const fetchVolumenSaida = async () => {
     setIsLoading(true)
     setError('')
@@ -478,7 +449,6 @@ export default function Reports() {
       'relatorio-movimentacoes': 'RELATÓRIO DE MOVIMENTAÇÕES',
       'relatorio-estoque-critico': 'RELATÓRIO DE ESTOQUE CRÍTICO',
       'relatorio-vencimento': 'RELATÓRIO DE PRÓXIMOS VENCIMENTOS',
-      'relatorio-usuarios': 'RELATÓRIO DE USUÁRIOS',
       'relatorio-volume-saida': 'RELATÓRIO DE PRODUTOS MAIS UTILIZADOS',
       'relatorio-mov-categoria': 'RELATÓRIO DE MOVIMENTAÇÕES POR CATEGORIA'
     }
@@ -731,9 +701,6 @@ export default function Reports() {
       case 'vencimento':
         fetchVencimento()
         break
-      case 'usuarios':
-        fetchUsuarios()
-        break
       case 'volume-saida':
         fetchVolumenSaida()
         break
@@ -779,7 +746,6 @@ export default function Reports() {
   }, [vencimentoFiltros.dias])
 
   const handleTabChange = (tab: ReportTab) => {
-    if (tab === 'usuarios' && !isAdmin) return
     setActiveTab(tab)
     setError('')
   }
@@ -1078,48 +1044,6 @@ export default function Reports() {
                     categoria: 'Categoria',
                     quantidade: 'Quantidade',
                     data_validade: 'Vencimento'
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Usuários Report - ADMIN Only */}
-            {activeTab === 'usuarios' && (
-              <div className="reports-report">
-                <div className="reports-report__header">
-                  <h2>Relatório de Usuários</h2>
-                  <div className="reports-report__actions">
-                    <button
-                      onClick={() => fetchUsuarios()}
-                      className="reports-report__btn reports-report__btn--refresh"
-                      title="Atualizar"
-                    >
-                      <RefreshCw size={16} />
-                    </button>
-                    <button
-                      onClick={() => exportToXLSX(usuariosData, 'relatorio-usuarios')}
-                      className="reports-report__btn reports-report__btn--export"
-                    >
-                      <Download size={16} /> Excel
-                    </button>
-                    <button
-                      onClick={() => exportToPDF(usuariosData, 'relatorio-usuarios')}
-                      className="reports-report__btn reports-report__btn--export"
-                    >
-                      <Download size={16} /> PDF
-                    </button>
-                  </div>
-                </div>
-
-                <ReportTable
-                  data={usuariosData}
-                  isLoading={isLoading}
-                  columns={['nome', 'email', 'perfil', 'ativo']}
-                  columnLabels={{
-                    nome: 'Nome',
-                    email: 'E-mail',
-                    perfil: 'Perfil',
-                    ativo: 'Status'
                   }}
                 />
               </div>
