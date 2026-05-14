@@ -70,6 +70,17 @@ CREATE INDEX IF NOT EXISTS idx_movimentacoes_fornecedor ON movimentacoes(fornece
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_created_at ON movimentacoes(created_at DESC);
 
 
+CREATE TABLE IF NOT EXISTS relatorios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo VARCHAR(50) NOT NULL,
+  titulo VARCHAR(255) NOT NULL,
+  parametros JSONB,
+  dados JSONB,
+  gerado_por UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -133,3 +144,8 @@ CREATE POLICY "Permitir todas operações para service_role" ON produtos FOR ALL
 
 CREATE POLICY "Permitir leitura para usuários autenticados" ON movimentacoes FOR SELECT USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 CREATE POLICY "Permitir todas operações para service_role" ON movimentacoes FOR ALL USING (auth.role() = 'service_role');
+
+ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir leitura para usuários autenticados" ON relatorios FOR SELECT USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+CREATE POLICY "Permitir todas operações para service_role" ON relatorios FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "Permitir inserção para usuários autenticados" ON relatorios FOR INSERT WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'service_role');
