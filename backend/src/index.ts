@@ -9,6 +9,7 @@ import productsRoutes from './routes/products.routes'
 import categoriesRoutes from './routes/categories.routes'
 import movimentacoesRoutes from './routes/movimentacoes.routes'
 import alertasRoutes, { runEstoqueMinimoJob, runVencimentoJob } from './routes/alertas.routes'
+import relatoriosRoutes from './routes/relatorios.routes'
 import { initSocket } from './utils/socket'
 
 dotenv.config()
@@ -29,6 +30,7 @@ app.use('/api/produtos', productsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/movimentacoes', movimentacoesRoutes)
 app.use('/api/alertas', alertasRoutes)
+app.use('/api/relatorios', relatoriosRoutes)
 
 const HORA_EM_MS = 60 * 60 * 1000
 

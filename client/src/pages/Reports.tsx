@@ -230,7 +230,7 @@ export default function Reports() {
         tipo: m.tipo,
         produto: m.produto_nome,
         quantidade: m.quantidade,
-        usuario: m.usuario?.nome || '-',
+        usuario: m.usuario_nome && m.usuario_nome !== 'Usuário desconhecido' ? m.usuario_nome : '-',
         data: new Date(m.created_at).toLocaleDateString('pt-BR')
       })) || []
       setMovimentacoesData(formatted)
@@ -275,30 +275,21 @@ export default function Reports() {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/produtos?limit=1000', {
+      const response = await fetch(`/api/relatorios/vencimentos?dias=${vencimentoFiltros.dias}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
       if (!response.ok) throw new Error('Erro ao carregar dados')
 
       const result = await response.json()
-      const diasAlerta = parseInt(vencimentoFiltros.dias)
-      const hoje = new Date()
-      const dataLimite = new Date(hoje)
-      dataLimite.setDate(dataLimite.getDate() + diasAlerta)
 
-      const formatted = result.data
-        ?.filter((p: any) => {
-          if (!p.data_validade) return false
-          const dataVal = new Date(p.data_validade)
-          return dataVal >= hoje && dataVal <= dataLimite
-        })
-        .map((p: any) => ({
+      const formatted = result
+        ?.map((p: any) => ({
           id: p.id,
           codigo: p.codigo,
           nome: p.nome,
           data_validade: new Date(p.data_validade).toLocaleDateString('pt-BR'),
-          categoria: p.categoria_nome || '-',
+          categoria: p.categorias?.nome || '-',
           quantidade: p.quantidade_atual
         })) || []
       setVencimentoData(formatted)
@@ -455,8 +446,35 @@ export default function Reports() {
     return titles[filename] || filename.toUpperCase()
   }
 
+  const saveReportLog = async (tipo: string, titulo: string, formato: string, data: any[]) => {
+    try {
+      let filtros = {}
+      if (tipo === 'produtos') filtros = produtosFiltros
+      if (tipo === 'movimentacoes') filtros = movimentacoesFiltros
+      if (tipo === 'vencimento') filtros = vencimentoFiltros
+      if (tipo === 'volume-saida') filtros = volumenSaidaFiltros
+      if (tipo === 'mov-categoria') filtros = movCategoriasFiltros
+
+      await fetch('/api/relatorios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          tipo: tipo.toUpperCase(),
+          titulo: `${titulo} (${formato})`,
+          parametros: { formato, total_registros: data.length, filtros },
+          dados: { qtde: data.length }
+        })
+      })
+    } catch (err) {
+      console.error('Erro ao salvar log de relatório:', err)
+    }
+  }
+
   // Funções de Exportação
-  const exportToXLSX = (data: any[], filename: string) => {
+  const exportToXLSX = async (data: any[], filename: string) => {
     if (data.length === 0) {
       setError('Nenhum dado para exportar')
       return
@@ -471,6 +489,8 @@ export default function Reports() {
       const reportTitle = getReportTitle(filename)
       const date = new Date().toLocaleDateString('pt-BR')
       const colCount = headers.length
+
+      await saveReportLog(activeTab, reportTitle, 'Excel', data)
 
       let rowNum = 1
 
@@ -570,7 +590,7 @@ export default function Reports() {
     }
   }
 
-  const exportToPDF = (data: any[], filename: string) => {
+  const exportToPDF = async (data: any[], filename: string) => {
     if (data.length === 0) {
       setError('Nenhum dado para exportar')
       return
@@ -587,6 +607,8 @@ export default function Reports() {
       const headers = getFilteredHeaders(allHeaders)
       const reportTitle = getReportTitle(filename)
       const date = new Date().toLocaleDateString('pt-BR')
+
+      await saveReportLog(activeTab, reportTitle, 'PDF', data)
 
       // Configurar fonte
       pdf.setFontSize(16)
@@ -832,7 +854,6 @@ export default function Reports() {
                     <select
                       value={produtosFiltros.categoria_id}
                       onChange={(e) => setProdutosFiltros({ ...produtosFiltros, categoria_id: e.target.value })}
-                      onChangeCapture={() => fetchProdutos()}
                     >
                       <option value="">Todas as categorias</option>
                       {categorias.map((cat: any) => (
@@ -845,7 +866,6 @@ export default function Reports() {
                     <select
                       value={produtosFiltros.status}
                       onChange={(e) => setProdutosFiltros({ ...produtosFiltros, status: e.target.value })}
-                      onChangeCapture={() => fetchProdutos()}
                     >
                       <option value="">Todos</option>
                       <option value="ativo">Ativo</option>
@@ -906,7 +926,6 @@ export default function Reports() {
                     <select
                       value={movimentacoesFiltros.tipo}
                       onChange={(e) => setMovimentacoesFiltros({ ...movimentacoesFiltros, tipo: e.target.value })}
-                      onChangeCapture={() => fetchMovimentacoes()}
                     >
                       <option value="">Todos</option>
                       <option value="ENTRADA">Entrada</option>
@@ -919,7 +938,6 @@ export default function Reports() {
                       type="date"
                       value={movimentacoesFiltros.data_inicio}
                       onChange={(e) => setMovimentacoesFiltros({ ...movimentacoesFiltros, data_inicio: e.target.value })}
-                      onChangeCapture={() => fetchMovimentacoes()}
                     />
                   </div>
                   <div className="reports-filter-group">
@@ -928,7 +946,6 @@ export default function Reports() {
                       type="date"
                       value={movimentacoesFiltros.data_fim}
                       onChange={(e) => setMovimentacoesFiltros({ ...movimentacoesFiltros, data_fim: e.target.value })}
-                      onChangeCapture={() => fetchMovimentacoes()}
                     />
                   </div>
                 </div>
@@ -1029,7 +1046,6 @@ export default function Reports() {
                       min="1"
                       value={vencimentoFiltros.dias}
                       onChange={(e) => setVencimentoFiltros({ dias: e.target.value })}
-                      onChangeCapture={() => fetchVencimento()}
                     />
                   </div>
                 </div>
@@ -1085,7 +1101,6 @@ export default function Reports() {
                       type="date"
                       value={volumenSaidaFiltros.data_inicio}
                       onChange={(e) => setVolumenSaidaFiltros({ ...volumenSaidaFiltros, data_inicio: e.target.value })}
-                      onChangeCapture={() => fetchVolumenSaida()}
                     />
                   </div>
                   <div className="reports-filter-group">
@@ -1094,7 +1109,6 @@ export default function Reports() {
                       type="date"
                       value={volumenSaidaFiltros.data_fim}
                       onChange={(e) => setVolumenSaidaFiltros({ ...volumenSaidaFiltros, data_fim: e.target.value })}
-                      onChangeCapture={() => fetchVolumenSaida()}
                     />
                   </div>
                 </div>
