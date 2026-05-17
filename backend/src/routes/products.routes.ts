@@ -110,6 +110,23 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'GESTAO'), async (req: Req
 
     if (error) throw error
 
+    // Registra a movimentação de entrada inicial
+    if (parseInt(quantidade_atual) > 0) {
+      const { error: movError } = await supabase
+        .from('movimentacoes')
+        .insert({
+          produto_id: novoProduct.id,
+          produto_nome: nome || novoProduct.nome,
+          tipo: 'ENTRADA',
+          quantidade: parseInt(quantidade_atual),
+          usuario_id: (req as any).user?.id,
+          observacao: null,
+          fornecedor_id: null
+        })
+
+      if (movError) console.error('Erro ao registrar movimentação inicial:', movError)
+    }
+
     getIO().emit('estoque_atualizado')
     runEstoqueMinimoJob()
     runVencimentoJob()
